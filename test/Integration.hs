@@ -8,7 +8,7 @@ interpreterCanDoMultilineArithmetic :: Test
 interpreterCanDoMultilineArithmetic =
   TestCase $
     case interpretWithGlobalDict input of
-      Right (OpResult _ os) -> assertEqual "arithmetic" expected os
+      Right (_, os) -> assertEqual "arithmetic" expected os
       Left err -> assertFailure $ show err
   where
     input =
@@ -23,14 +23,14 @@ interpreterDoesNothingOnEmptyInput :: Test
 interpreterDoesNothingOnEmptyInput =
   TestCase $
     case interpretWithGlobalDict "" of
-      Right (OpResult _ os) -> assertEqual "empty input" [] os
+      Right (_, os) -> assertEqual "empty input" [] os
       Left err -> assertFailure $ show err
 
 interpreterDiscardsEmptySpaces :: Test
 interpreterDiscardsEmptySpaces =
   TestCase $
     case interpretWithGlobalDict input of
-      Right (OpResult _ os) -> assertEqual "empty spaces" expected os
+      Right (_, os) -> assertEqual "empty spaces" expected os
       Left err -> assertFailure $ show err
   where
     input = "  \n  \t  "
@@ -40,7 +40,7 @@ interpreterHandlesNestedParentheses :: Test
 interpreterHandlesNestedParentheses =
   TestCase $
     case interpretWithGlobalDict input of
-      Right (OpResult _ os) -> assertEqual "nested parentheses" expected os
+      Right (_, os) -> assertEqual "nested parentheses" expected os
       Left err -> assertFailure $ show err
   where
     input = "(()) length"

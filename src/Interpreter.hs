@@ -86,18 +86,18 @@ tokenize s = go s [] [] 0
 interpret :: [Dictionary] -> String -> Either InterpreterError OpResult
 interpret ds code = case tokenize code of
   Left err -> Left err
-  Right tokens -> foldl processToken (Right $ OpResult ds []) tokens
+  Right tokens -> foldl processToken (Right (ds, [])) tokens
   where
     processToken :: Either InterpreterError OpResult -> String -> Either InterpreterError OpResult
     processToken (Left err) _ = Left err -- Propogate error up
-    processToken (Right (OpResult ds' os)) token
-      | all isDigit token = Right $ OpResult ds' (OperandInt (read token) : os) -- Push number to operand stack as an OperandInt
-      | isPostscriptString token = Right $ OpResult ds' (OperandString token : os) -- Push string to operand stack as an OperandString
-      | isPostscriptBool token = Right $ OpResult ds' (OperandBool (token == "true") : os) -- Push boolean to operand stack as an OperandBool
-      | isPostscriptName token = Right $ OpResult ds' (OperandName (tail token) : os) -- Push name to operand stack as an OperandName
+    processToken (Right (ds', os)) token
+      | all isDigit token = Right (ds', OperandInt (read token) : os) -- Push number to operand stack as an OperandInt
+      | isPostscriptString token = Right (ds', OperandString token : os) -- Push string to operand stack as an OperandString
+      | isPostscriptBool token = Right (ds', OperandBool (token == "true") : os) -- Push boolean to operand stack as an OperandBool
+      | isPostscriptName token = Right (ds, OperandName (tail token) : os) -- Push name to operand stack as an OperandName
       | otherwise = case lookupDictStackSymbol token ds' of
           Just op -> case op ds' os of
-            Right (OpResult ds'' os') -> Right $ OpResult ds'' os' -- Apply operator to dictionary and operand stack. Propogate new stacks up.
+            Right (ds'', os') -> Right (ds'', os') -- Apply operator to dictionary and operand stack. Propogate new stacks up.
             Left err -> Left $ OperandError err -- Propogate operand error up
           Nothing -> Left (SymbolNotFound token) -- Propogate symbol not found error up
 

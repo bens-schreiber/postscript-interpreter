@@ -6,18 +6,13 @@ import Data.Bits
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 
-data Operand = OperandInt Int | OperandBool Bool | OperandString String | OperandDict Dictionary | OperandName String
+data Operand = OperandInt Int | OperandBool Bool | OperandString String | OperandDict Dictionary | OperandName String | OperandProc String
   deriving (Show, Eq, Ord)
 
 data OpError = TypeMismatchError | StackUnderflowError | DivisionByZeroError | IndexOutOfBoundsError | StackOverflowError
   deriving (Show, Eq)
 
--- | Result of an operator function
-data OpResult = OpResult
-  { dictionaries :: [Dictionary],
-    operands :: [Operand]
-  }
-  deriving (Show, Eq)
+type OpResult = ([Dictionary], [Operand])
 
 -- | Some function that operates on both the operand os and the dictionary os, returning new stacks or an error
 type Operator = [Dictionary] -> [Operand] -> Either OpError OpResult
@@ -42,34 +37,34 @@ makeDict n = Dictionary n HashMap.empty
 
 {--#region Stack Manipulation--}
 psExch :: Operator
-psExch ds (x : y : os) = Right $ OpResult ds (y : x : os)
+psExch ds (x : y : os) = Right (ds, y : x : os)
 psExch _ _ = Left StackUnderflowError
 
 psPop :: Operator
-psPop ds (_ : os) = Right $ OpResult ds os
+psPop ds (_ : os) = Right (ds, os)
 psPop _ _ = Left StackUnderflowError
 
 psCopy :: Operator
 psCopy ds (OperandInt n : os)
-  | n <= length os = Right $ OpResult ds (take n os ++ os)
+  | n <= length os = Right (ds, take n os ++ os)
   | otherwise = Left StackUnderflowError
 psCopy _ _ = Left StackUnderflowError
 
 psDup :: Operator
-psDup ds (o : os) = Right $ OpResult ds (o : o : os)
+psDup ds (o : os) = Right (ds, o : o : os)
 psDup _ _ = Left StackUnderflowError
 
 psClear :: Operator
-psClear ds _ = Right $ OpResult ds []
+psClear ds _ = Right (ds, [])
 
 psCount :: Operator
-psCount ds os = Right $ OpResult ds (OperandInt (length os) : os)
+psCount ds os = Right (ds, OperandInt (length os) : os)
 
 {--#endregion Stack Manipulation--}
 
 {--#region Arithmetic Operations--}
 binaryIntOp :: (Int -> Int -> Int) -> Operator
-binaryIntOp op ds (OperandInt x : OperandInt y : os) = Right $ OpResult ds (OperandInt (y `op` x) : os)
+binaryIntOp op ds (OperandInt x : OperandInt y : os) = Right (ds, OperandInt (y `op` x) : os)
 binaryIntOp _ _ (_ : _ : _) = Left TypeMismatchError
 binaryIntOp _ _ _ = Left StackUnderflowError
 
@@ -96,27 +91,27 @@ stripstr :: String -> String
 stripstr = init . tail
 
 psStrLength :: Operator
-psStrLength ds (OperandString s : os) = Right $ OpResult ds (OperandInt (pslen s) : os)
+psStrLength ds (OperandString s : os) = Right (ds, OperandInt (pslen s) : os)
 psStrLength _ (_ : _) = Left TypeMismatchError
 psStrLength _ [] = Left StackUnderflowError
 
 psGet :: Operator
 psGet ds (OperandInt n : OperandString s : os)
-  | n >= 0 && n < pslen s = Right $ OpResult ds (OperandInt (fromEnum (s !! (n + 1))) : os)
+  | n >= 0 && n < pslen s = Right (ds, OperandInt (fromEnum (s !! (n + 1))) : os)
   | otherwise = Left IndexOutOfBoundsError
 psGet _ (_ : _ : _) = Left TypeMismatchError
 psGet _ _ = Left StackUnderflowError
 
 psGetInterval :: Operator
 psGetInterval ds (OperandInt n : OperandInt count : OperandString s : os)
-  | n >= 0 && n + count <= pslen s = Right $ OpResult ds (OperandString (wrapstr $ take count (drop (n + 1) s)) : os)
+  | n >= 0 && n + count <= pslen s = Right (ds, OperandString (wrapstr $ take count (drop (n + 1) s)) : os)
   | otherwise = Left IndexOutOfBoundsError
 psGetInterval _ (_ : _ : _ : _) = Left TypeMismatchError
 psGetInterval _ _ = Left StackUnderflowError
 
 psPutInterval :: Operator
 psPutInterval ds (OperandString replacement : OperandInt si : OperandString s : os)
-  | si >= 0 && si + pslen replacement <= pslen s = Right $ OpResult ds (OperandString (wrapstr $ take si (stripstr s) ++ stripstr replacement ++ drop (si + pslen replacement) (stripstr s)) : os)
+  | si >= 0 && si + pslen replacement <= pslen s = Right (ds, OperandString (wrapstr $ take si (stripstr s) ++ stripstr replacement ++ drop (si + pslen replacement) (stripstr s)) : os)
   | otherwise = Left IndexOutOfBoundsError
 psPutInterval _ (_ : _ : _ : _) = Left TypeMismatchError
 psPutInterval _ _ = Left StackUnderflowError
@@ -125,18 +120,18 @@ psPutInterval _ _ = Left StackUnderflowError
 
 {--#region Boolean Operations--}
 psEq :: Operator
-psEq ds (x : y : os) = Right $ OpResult ds (OperandBool (x == y) : os)
+psEq ds (x : y : os) = Right (ds, OperandBool (x == y) : os)
 psEq _ _ = Left StackUnderflowError
 
 psNe :: Operator
-psNe ds (x : y : os) = Right $ OpResult ds (OperandBool (x /= y) : os)
+psNe ds (x : y : os) = Right (ds, OperandBool (x /= y) : os)
 psNe _ _ = Left StackUnderflowError
 
 binaryBoolOp :: (Bool -> Bool -> Bool) -> (Int -> Int -> Int) -> Operator
-binaryBoolOp binOp _ ds (OperandBool x : OperandBool y : os) = Right $ OpResult ds (OperandBool (y `binOp` x) : os)
-binaryBoolOp _ bitOp ds (OperandBool x : OperandInt y : os) = Right $ OpResult ds (OperandInt (y `bitOp` fromEnum x) : os)
-binaryBoolOp _ bitOp ds (OperandInt x : OperandBool y : os) = Right $ OpResult ds (OperandInt (x `bitOp` fromEnum y) : os)
-binaryBoolOp _ bitOp ds (OperandInt x : OperandInt y : os) = Right $ OpResult ds (OperandInt (y `bitOp` x) : os)
+binaryBoolOp binOp _ ds (OperandBool x : OperandBool y : os) = Right (ds, OperandBool (y `binOp` x) : os)
+binaryBoolOp _ bitOp ds (OperandBool x : OperandInt y : os) = Right (ds, OperandInt (y `bitOp` fromEnum x) : os)
+binaryBoolOp _ bitOp ds (OperandInt x : OperandBool y : os) = Right (ds, OperandInt (x `bitOp` fromEnum y) : os)
+binaryBoolOp _ bitOp ds (OperandInt x : OperandInt y : os) = Right (ds, OperandInt (y `bitOp` x) : os)
 binaryBoolOp _ _ _ (_ : _ : _) = Left TypeMismatchError
 binaryBoolOp _ _ _ _ = Left StackUnderflowError
 
@@ -145,13 +140,13 @@ psAnd = binaryBoolOp (&&) (.&.)
 psOr = binaryBoolOp (||) (.|.)
 
 psNot :: Operator
-psNot ds (OperandBool b : os) = Right $ OpResult ds (OperandBool (not b) : os)
-psNot ds (OperandInt b : os) = Right $ OpResult ds (OperandInt (complement b) : os)
+psNot ds (OperandBool b : os) = Right (ds, OperandBool (not b) : os)
+psNot ds (OperandInt b : os) = Right (ds, OperandInt (complement b) : os)
 psNot _ (_ : _) = Left TypeMismatchError
 psNot _ _ = Left StackUnderflowError
 
 comparisonOp :: (Operand -> Operand -> Bool) -> Operator
-comparisonOp op ds (x : y : os) = Right $ OpResult ds (OperandBool (y `op` x) : os)
+comparisonOp op ds (x : y : os) = Right (ds, OperandBool (y `op` x) : os)
 comparisonOp _ _ _ = Left StackUnderflowError
 
 psGt, psLt :: Operator
@@ -163,32 +158,32 @@ psLt = comparisonOp (<)
 {-- #region Dictionary Operations--}
 
 psDict :: Operator
-psDict ds (OperandInt n : os) = Right $ OpResult ds (OperandDict (makeDict n) : os)
+psDict ds (OperandInt n : os) = Right (ds, OperandDict (makeDict n) : os)
 psDict _ _ = Left TypeMismatchError
 
 psLengthDict :: Operator
-psLengthDict ds (OperandDict (Dictionary _ d) : os) = Right $ OpResult ds (OperandInt (HashMap.size d) : os)
+psLengthDict ds (OperandDict (Dictionary _ d) : os) = Right (ds, OperandInt (HashMap.size d) : os)
 psLengthDict _ _ = Left TypeMismatchError
 
 psMaxlength :: Operator
-psMaxlength ds (OperandDict (Dictionary n _) : os) = Right $ OpResult ds (OperandInt n : os)
+psMaxlength ds (OperandDict (Dictionary n _) : os) = Right (ds, OperandInt n : os)
 psMaxlength _ _ = Left TypeMismatchError
 
 psBeginDict :: Operator
-psBeginDict ds (OperandDict d : os) = Right $ OpResult (d : ds) os
+psBeginDict ds (OperandDict d : os) = Right (d : ds, os)
 psBeginDict _ _ = Left TypeMismatchError
 
 psEndDict :: Operator
-psEndDict (_ : ds) os = Right $ OpResult ds os
+psEndDict (_ : ds) os = Right (ds, os)
 psEndDict _ _ = Left StackUnderflowError
 
 -- | Creates an operator that pushes a value onto the operand stack
 valueOperator :: Operand -> Operator
-valueOperator o ds os = Right $ OpResult ds (o : os)
+valueOperator o ds os = Right (ds, o : os)
 
 psDef :: Operator
 psDef (Dictionary n d : ds) (value : OperandName key : os)
-  | HashMap.size d < n = Right $ OpResult (Dictionary n (HashMap.insert key (valueOperator value) d) : ds) os
+  | HashMap.size d < n = Right (Dictionary n (HashMap.insert key (valueOperator value) d) : ds, os)
   | otherwise = Left StackOverflowError
 psDef _ _ = Left TypeMismatchError
 

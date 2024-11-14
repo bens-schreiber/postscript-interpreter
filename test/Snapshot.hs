@@ -10,6 +10,7 @@ extractValue (OperandInt i) = show i
 extractValue (OperandBool b) = if b then "true" else "false"
 extractValue (OperandDict d) = show d
 extractValue (OperandName n) = n
+extractValue (OperandProc p) = "--nostringval--"
 
 snapshotAllBasicOperators :: Test
 snapshotAllBasicOperators = TestCase $ do
@@ -17,7 +18,7 @@ snapshotAllBasicOperators = TestCase $ do
   out <- readFile "test/sample/basic_ops.out"
 
   case interpretWithGlobalDict in' of
-    Right (OpResult _ os) -> assertEqual "all basic operations" (lines out) (map extractValue os)
+    Right (_, os) -> assertEqual "all basic operations" (lines out) (map extractValue os)
     Left err -> assertFailure $ show err
 
 runSnapshotTests :: IO ()

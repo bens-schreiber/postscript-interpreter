@@ -42,7 +42,7 @@ testPsAdd =
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
-    expected = Right $ OpResult [] [OperandInt 3]
+    expected = Right ([], [OperandInt 3])
 
 testPsSub :: Test
 testPsSub =
@@ -51,7 +51,7 @@ testPsSub =
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
-    expected = Right $ OpResult [] [OperandInt 1]
+    expected = Right ([], [OperandInt 1])
 
 {--#endregion Arithmetic--}
 
@@ -64,7 +64,7 @@ testPsExch =
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
-    expected = Right $ OpResult [] [OperandInt 2, OperandInt 1]
+    expected = Right ([], [OperandInt 2, OperandInt 1])
 
 testPsPop :: Test
 testPsPop =
@@ -73,7 +73,7 @@ testPsPop =
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
-    expected = Right $ OpResult [] [OperandInt 2]
+    expected = Right ([], [OperandInt 2])
 
 testPsCopy :: Test
 testPsCopy =
@@ -82,7 +82,7 @@ testPsCopy =
   where
     ds = []
     os = [OperandInt 2, OperandInt 2, OperandInt 1] -- Top of stack is first, copy first 2 elements => 2, 1 ; append to top of stack => 2, 1, 2, 1
-    expected = Right $ OpResult [] [OperandInt 2, OperandInt 1, OperandInt 2, OperandInt 1]
+    expected = Right ([], [OperandInt 2, OperandInt 1, OperandInt 2, OperandInt 1])
 
 testPsDup :: Test
 testPsDup =
@@ -91,7 +91,7 @@ testPsDup =
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
-    expected = Right $ OpResult [] [OperandInt 1, OperandInt 1, OperandInt 2]
+    expected = Right ([], [OperandInt 1, OperandInt 1, OperandInt 2])
 
 testPsClear :: Test
 testPsClear =
@@ -100,7 +100,7 @@ testPsClear =
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
-    expected = Right $ OpResult [] []
+    expected = Right ([], [])
 
 testPsCount :: Test
 testPsCount =
@@ -109,7 +109,7 @@ testPsCount =
   where
     ds = []
     os = [OperandInt 0, OperandInt 0]
-    expected = Right $ OpResult [] [OperandInt 2, OperandInt 0, OperandInt 0]
+    expected = Right ([], [OperandInt 2, OperandInt 0, OperandInt 0])
 
 {--#endregion Stack Manipulation--}
 
@@ -122,7 +122,7 @@ testPsLength =
   where
     ds = []
     os = [OperandString "(hello)"]
-    expected = Right $ OpResult [] [OperandInt 5]
+    expected = Right ([], [OperandInt 5])
 
 testPsGet :: Test
 testPsGet =
@@ -131,7 +131,7 @@ testPsGet =
   where
     ds = []
     os = [OperandInt 0, OperandString "(hello)"]
-    expected = Right $ OpResult [] [OperandInt 104]
+    expected = Right ([], [OperandInt 104])
 
 testPsGetOutOfBounds :: Test
 testPsGetOutOfBounds =
@@ -149,7 +149,7 @@ testPsGetInterval =
   where
     ds = []
     os = [OperandInt 0, OperandInt 2, OperandString "(hello)"]
-    expected = Right $ OpResult [] [OperandString "(he)"]
+    expected = Right ([], [OperandString "(he)"])
 
 testPsPutInterval :: Test
 testPsPutInterval =
@@ -158,7 +158,7 @@ testPsPutInterval =
   where
     ds = []
     os = [OperandString "(he)", OperandInt 0, OperandString "(xxllo)"]
-    expected = Right $ OpResult [] [OperandString "(hello)"]
+    expected = Right ([], [OperandString "(hello)"])
 
 {--#endregion String Operations--}
 
@@ -171,7 +171,7 @@ testPsEq =
   where
     ds = []
     os = [OperandInt 1, OperandInt 1]
-    expected = Right $ OpResult [] [OperandBool True]
+    expected = Right ([], [OperandBool True])
 
 testPsNe :: Test
 testPsNe =
@@ -180,7 +180,7 @@ testPsNe =
   where
     ds = []
     os = [OperandInt 1, OperandInt 1]
-    expected = Right $ OpResult [] [OperandBool False]
+    expected = Right ([], [OperandBool False])
 
 testPsGt :: Test
 testPsGt =
@@ -189,7 +189,7 @@ testPsGt =
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
-    expected = Right $ OpResult [] [OperandBool True]
+    expected = Right ([], [OperandBool True])
 
 testPsLt :: Test
 testPsLt =
@@ -198,7 +198,7 @@ testPsLt =
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
-    expected = Right $ OpResult [] [OperandBool False]
+    expected = Right ([], [OperandBool False])
 
 testPsAnd :: Test
 testPsAnd =
@@ -207,7 +207,7 @@ testPsAnd =
   where
     ds = []
     os = [OperandBool True, OperandBool False]
-    expected = Right $ OpResult [] [OperandBool False]
+    expected = Right ([], [OperandBool False])
 
 testPsOr :: Test
 testPsOr =
@@ -216,7 +216,7 @@ testPsOr =
   where
     ds = []
     os = [OperandBool True, OperandBool False]
-    expected = Right $ OpResult [] [OperandBool True]
+    expected = Right ([], [OperandBool True])
 
 testPsNot :: Test
 testPsNot =
@@ -225,7 +225,7 @@ testPsNot =
   where
     ds = []
     os = [OperandBool True]
-    expected = Right $ OpResult [] [OperandBool False]
+    expected = Right ([], [OperandBool False])
 
 {--#endregion Boolean Operations--}
 
@@ -238,7 +238,7 @@ testDict =
   where
     ds = []
     os = [OperandInt 5]
-    expected = Right $ OpResult [] [OperandDict $ makeDict 5]
+    expected = Right ([], [OperandDict $ makeDict 5])
 
 testLengthDict :: Test
 testLengthDict =
@@ -247,7 +247,7 @@ testLengthDict =
   where
     ds = []
     os = [OperandDict $ makeDict 5]
-    expected = Right $ OpResult [] [OperandInt 0]
+    expected = Right ([], [OperandInt 0])
 
 testMaxLength :: Test
 testMaxLength =
@@ -256,7 +256,7 @@ testMaxLength =
   where
     ds = []
     os = [OperandDict $ makeDict 5]
-    expected = Right $ OpResult [] [OperandInt 5]
+    expected = Right ([], [OperandInt 5])
 
 testBeginDict :: Test
 testBeginDict =
@@ -265,7 +265,7 @@ testBeginDict =
   where
     ds = []
     os = [OperandDict $ makeDict 5]
-    expected = Right $ OpResult [makeDict 5] []
+    expected = Right ([makeDict 5], [])
 
 testEndDict :: Test
 testEndDict =
@@ -274,20 +274,20 @@ testEndDict =
   where
     ds = [makeDict 5]
     os = []
-    expected = Right $ OpResult [] []
+    expected = Right ([], [])
 
 testDef :: Test
 testDef =
   TestCase $
     case psDef ds os of
-      Right (OpResult ds' os') -> case lookupDict "foo" (head ds') of
+      Right (ds', os') -> case lookupDict "foo" (head ds') of
         Just op -> assertEqual "def" expected (op ds' os')
         Nothing -> assertFailure "foo not found"
       Left _ -> assertFailure "Error"
   where
     ds = [makeDict 5]
     os = [OperandInt 1, OperandName "foo"]
-    expected = Right $ OpResult ds [OperandInt 1]
+    expected = Right (ds, [OperandInt 1])
 
 {--#endregion Dictionary Operations--}
 
