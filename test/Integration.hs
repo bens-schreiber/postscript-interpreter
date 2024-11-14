@@ -36,16 +36,48 @@ interpreterDiscardsEmptySpaces =
     input = "  \n  \t  "
     expected = []
 
+interpreterHandlesNestedParentheses :: Test
+interpreterHandlesNestedParentheses =
+  TestCase $
+    case interpretWithGlobalDict input of
+      Right (OpResult _ os) -> assertEqual "nested parentheses" expected os
+      Left err -> assertFailure $ show err
+  where
+    input = "(()) length"
+    expected = [OperandInt 2]
+
 interpreterRaisesErrorOnUnknownSymbol :: Test
 interpreterRaisesErrorOnUnknownSymbol =
   TestCase $
     case interpretWithGlobalDict input of
-      Left SymbolNotFound -> return ()
+      Left (SymbolNotFound "foo") -> return ()
       Right _ -> assertFailure "Expected SymbolNotFound error"
       Left err -> assertEqual "Error" expected err
   where
     input = "1 2 foo"
-    expected = SymbolNotFound
+    expected = SymbolNotFound "foo"
+
+interpreterRaisesErrorOnUnmatchedParentheses :: Test
+interpreterRaisesErrorOnUnmatchedParentheses =
+  TestCase $
+    case interpretWithGlobalDict input of
+      Left StringNeverClosed -> return ()
+      Right _ -> assertFailure "Expected StringNeverClosed error"
+      Left err -> assertEqual "Error" expected err
+  where
+    input = "(1 2"
+    expected = StringNeverClosed
+
+interpreterRaisesErrorOnUnmatchedParentheses2 :: Test
+interpreterRaisesErrorOnUnmatchedParentheses2 =
+  TestCase $
+    case interpretWithGlobalDict input of
+      Left StringNeverOpened -> return ()
+      Right _ -> assertFailure "Expected StringNeverOpened error"
+      Left err -> assertEqual "Error" expected err
+  where
+    input = "1 2)"
+    expected = StringNeverOpened
 
 {--#endregion Error Handling--}
 
@@ -57,6 +89,9 @@ runIntegrationTests = do
         [ interpreterCanDoMultilineArithmetic,
           interpreterDoesNothingOnEmptyInput,
           interpreterDiscardsEmptySpaces,
-          interpreterRaisesErrorOnUnknownSymbol
+          interpreterHandlesNestedParentheses,
+          interpreterRaisesErrorOnUnknownSymbol,
+          interpreterRaisesErrorOnUnmatchedParentheses,
+          interpreterRaisesErrorOnUnmatchedParentheses2
         ]
   return ()

@@ -32,7 +32,7 @@ instance Eq Dictionary where
   (Dictionary cap1 _) == (Dictionary cap2 _) = cap1 == cap2
 
 instance Show Dictionary where
-  show (Dictionary cap _) = "Dictionary with capacity " ++ show cap
+  show (Dictionary _ _) = "--nostringval--"
 
 instance Ord Dictionary where
   compare (Dictionary cap1 _) (Dictionary cap2 _) = compare cap1 cap2
@@ -86,28 +86,37 @@ psDiv ds os = binaryIntOp div ds os
 {--#endregion Arithmetic Operations--}
 
 {--#region String Operations--}
+pslen :: String -> Int
+pslen = subtract 2 . length
+
+wrapstr :: String -> String
+wrapstr s = "(" ++ s ++ ")"
+
+stripstr :: String -> String
+stripstr = init . tail
+
 psStrLength :: Operator
-psStrLength ds (OperandString s : os) = Right $ OpResult ds (OperandInt (length s) : os)
+psStrLength ds (OperandString s : os) = Right $ OpResult ds (OperandInt (pslen s) : os)
 psStrLength _ (_ : _) = Left TypeMismatchError
 psStrLength _ [] = Left StackUnderflowError
 
 psGet :: Operator
 psGet ds (OperandInt n : OperandString s : os)
-  | n >= 0 && n < length s = Right $ OpResult ds (OperandInt (fromEnum (s !! n)) : os)
+  | n >= 0 && n < pslen s = Right $ OpResult ds (OperandInt (fromEnum (s !! (n + 1))) : os)
   | otherwise = Left IndexOutOfBoundsError
 psGet _ (_ : _ : _) = Left TypeMismatchError
 psGet _ _ = Left StackUnderflowError
 
 psGetInterval :: Operator
 psGetInterval ds (OperandInt n : OperandInt count : OperandString s : os)
-  | n >= 0 && n + count <= length s = Right $ OpResult ds (OperandString (take count (drop n s)) : os)
+  | n >= 0 && n + count <= pslen s = Right $ OpResult ds (OperandString (wrapstr $ take count (drop (n + 1) s)) : os)
   | otherwise = Left IndexOutOfBoundsError
 psGetInterval _ (_ : _ : _ : _) = Left TypeMismatchError
 psGetInterval _ _ = Left StackUnderflowError
 
 psPutInterval :: Operator
 psPutInterval ds (OperandString replacement : OperandInt si : OperandString s : os)
-  | si >= 0 && si + length replacement <= length s = Right $ OpResult ds (OperandString (take si s ++ replacement ++ drop (si + length replacement) s) : os)
+  | si >= 0 && si + pslen replacement <= pslen s = Right $ OpResult ds (OperandString (wrapstr $ take si (stripstr s) ++ stripstr replacement ++ drop (si + pslen replacement) (stripstr s)) : os)
   | otherwise = Left IndexOutOfBoundsError
 psPutInterval _ (_ : _ : _ : _) = Left TypeMismatchError
 psPutInterval _ _ = Left StackUnderflowError

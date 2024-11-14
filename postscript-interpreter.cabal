@@ -56,9 +56,11 @@ executable postscript-interpreter-exe
 
 test-suite postscript-interpreter-test
   type: exitcode-stdio-1.0
-  main-is: Unit.hs
+  main-is: Spec.hs
   other-modules:
       Integration
+      Snapshot
+      Unit
       Paths_postscript_interpreter
   autogen-modules:
       Paths_postscript_interpreter

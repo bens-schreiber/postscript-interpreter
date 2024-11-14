@@ -3,11 +3,17 @@ module Interpreter (interpretWithGlobalDict, InterpreterError (..), tokenize) wh
 import Data.Char
 import GlobalDict
 
-data InterpreterError = SymbolNotFound | StringNeverClosed | StringNeverOpened | OperandError OpError
+data InterpreterError = SymbolNotFound String | StringNeverClosed | StringNeverOpened | OperandError OpError
   deriving (Show, Eq)
 
 isPostscriptString :: String -> Bool
 isPostscriptString s = head s == '(' && last s == ')'
+
+isPostscriptBool :: String -> Bool
+isPostscriptBool s = s == "true" || s == "false"
+
+isPostscriptName :: String -> Bool
+isPostscriptName s = head s == '/'
 
 lookupDictStackSymbol :: String -> [Dictionary] -> Maybe Operator
 lookupDictStackSymbol _ [] = Nothing
@@ -87,11 +93,13 @@ interpret ds code = case tokenize code of
     processToken (Right (OpResult ds' os)) token
       | all isDigit token = Right $ OpResult ds' (OperandInt (read token) : os) -- Push number to operand stack as an OperandInt
       | isPostscriptString token = Right $ OpResult ds' (OperandString token : os) -- Push string to operand stack as an OperandString
+      | isPostscriptBool token = Right $ OpResult ds' (OperandBool (token == "true") : os) -- Push boolean to operand stack as an OperandBool
+      | isPostscriptName token = Right $ OpResult ds' (OperandName (tail token) : os) -- Push name to operand stack as an OperandName
       | otherwise = case lookupDictStackSymbol token ds' of
           Just op -> case op ds' os of
             Right (OpResult ds'' os') -> Right $ OpResult ds'' os' -- Apply operator to dictionary and operand stack. Propogate new stacks up.
             Left err -> Left $ OperandError err -- Propogate operand error up
-          Nothing -> Left SymbolNotFound -- Propogate symbol not found error up
+          Nothing -> Left (SymbolNotFound token) -- Propogate symbol not found error up
 
 interpretWithGlobalDict :: String -> Either InterpreterError OpResult
 interpretWithGlobalDict = interpret [globalDictionary]

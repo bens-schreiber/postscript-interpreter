@@ -1,6 +1,7 @@
+module Unit (runUnitTests) where
+
 import Data.Maybe (isJust, isNothing)
 import GlobalDict
-import Integration
 import Test.HUnit
   ( Test (TestCase, TestList),
     assertBool,
@@ -120,7 +121,7 @@ testPsLength =
     assertEqual "length" expected (psLength ds os)
   where
     ds = []
-    os = [OperandString "hello"]
+    os = [OperandString "(hello)"]
     expected = Right $ OpResult [] [OperandInt 5]
 
 testPsGet :: Test
@@ -129,7 +130,7 @@ testPsGet =
     assertEqual "get" expected (psGet ds os)
   where
     ds = []
-    os = [OperandInt 0, OperandString "hello"]
+    os = [OperandInt 0, OperandString "(hello)"]
     expected = Right $ OpResult [] [OperandInt 104]
 
 testPsGetOutOfBounds :: Test
@@ -138,7 +139,7 @@ testPsGetOutOfBounds =
     assertEqual "get" expected (psGet ds os)
   where
     ds = []
-    os = [OperandInt 5, OperandString "hello"]
+    os = [OperandInt 5, OperandString "(hello)"]
     expected = Left IndexOutOfBoundsError
 
 testPsGetInterval :: Test
@@ -147,8 +148,8 @@ testPsGetInterval =
     assertEqual "getinterval" expected (psGetInterval ds os)
   where
     ds = []
-    os = [OperandInt 0, OperandInt 2, OperandString "hello"]
-    expected = Right $ OpResult [] [OperandString "he"]
+    os = [OperandInt 0, OperandInt 2, OperandString "(hello)"]
+    expected = Right $ OpResult [] [OperandString "(he)"]
 
 testPsPutInterval :: Test
 testPsPutInterval =
@@ -156,8 +157,8 @@ testPsPutInterval =
     assertEqual "putinterval" expected (psPutInterval ds os)
   where
     ds = []
-    os = [OperandString "he", OperandInt 0, OperandString "xxllo"]
-    expected = Right $ OpResult [] [OperandString "hello"]
+    os = [OperandString "(he)", OperandInt 0, OperandString "(xxllo)"]
+    expected = Right $ OpResult [] [OperandString "(hello)"]
 
 {--#endregion String Operations--}
 
@@ -290,8 +291,8 @@ testDef =
 
 {--#endregion Dictionary Operations--}
 
-main :: IO ()
-main = do
+runUnitTests :: IO ()
+runUnitTests = do
   _ <-
     runTestTT $
       TestList
@@ -326,5 +327,4 @@ main = do
           testEndDict,
           testDef
         ]
-  _ <- runIntegrationTests
   return ()

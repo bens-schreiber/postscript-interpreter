@@ -1,4 +1,4 @@
-foobar
+(foobar)
 5
 0
 --nostringval--
@@ -12,10 +12,11 @@ true
 true
 true
 false
-ab
+(hello)
+(ab)
 97
 4
-2.0
+2
 2
 4
 -1

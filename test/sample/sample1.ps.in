@@ -5,8 +5,8 @@
 4 2 div
 (four) length
 (a) 0 get
-(abcd) 0 2 getinterval
-(xxlo) 0 (he) putinterval
+(abcd) 2 0 getinterval
+(xxllo) 0 (he) putinterval
 1 2 eq
 2 2 eq
 (hi) (hi) eq

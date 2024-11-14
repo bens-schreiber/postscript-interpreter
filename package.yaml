@@ -50,7 +50,7 @@ executables:
 
 tests:
   postscript-interpreter-test:
-    main: Unit.hs
+    main: Spec.hs
     source-dirs: test
     ghc-options:
       - -threaded

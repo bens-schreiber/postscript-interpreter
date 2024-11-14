@@ -5,6 +5,6 @@ import Interpreter
 
 main :: IO ()
 main = do
-  print $
-    tokenize
-      "  \n  \t  "
+  case interpretWithGlobalDict "(abcd) 2 0 getinterval" of
+    Right (OpResult _ os) -> print os
+    Left err -> print err
