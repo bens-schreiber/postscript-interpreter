@@ -113,6 +113,60 @@ globalDictCount =
 
 {--#endregion Stack Manipulation--}
 
+{--#region String Operations--}
+
+globalDictLength :: Test
+globalDictLength =
+  TestCase $
+    case lookupDict "length" globalDictionary of
+      Just op -> assertEqual "length" expected (op input)
+      Nothing -> assertFailure "Operator not found"
+  where
+    input = [OperandString "hello"]
+    expected = Right [OperandInt 5]
+
+globalDictGet :: Test
+globalDictGet =
+  TestCase $
+    case lookupDict "get" globalDictionary of
+      Just op -> assertEqual "get" expected (op input)
+      Nothing -> assertFailure "Operator not found"
+  where
+    input = [OperandInt 0, OperandString "hello"]
+    expected = Right [OperandInt 104]
+
+globalDictGetOutOfBounds :: Test
+globalDictGetOutOfBounds =
+  TestCase $
+    case lookupDict "get" globalDictionary of
+      Just op -> assertEqual "get" expected (op input)
+      Nothing -> assertFailure "Operator not found"
+  where
+    input = [OperandInt 5, OperandString "hello"]
+    expected = Left $ TypeMismatchError "Index out of bounds"
+
+globalDictGetInterval :: Test
+globalDictGetInterval =
+  TestCase $
+    case lookupDict "getinterval" globalDictionary of
+      Just op -> assertEqual "getinterval" expected (op input)
+      Nothing -> assertFailure "Operator not found"
+  where
+    input = [OperandInt 0, OperandInt 2, OperandString "hello"]
+    expected = Right [OperandString "he"]
+
+globalDictPutInterval :: Test
+globalDictPutInterval =
+  TestCase $
+    case lookupDict "putinterval" globalDictionary of
+      Just op -> assertEqual "putinterval" expected (op input)
+      Nothing -> assertFailure "Operator not found"
+  where
+    input = [OperandString "he", OperandInt 0, OperandString "xxllo"]
+    expected = Right [OperandString "hello"]
+
+{--#endregion String Operations--}
+
 main :: IO ()
 main = do
   _ <-
@@ -129,6 +183,11 @@ main = do
           globalDictCopy,
           globalDictDup,
           globalDictClear,
-          globalDictCount
+          globalDictCount,
+          globalDictLength,
+          globalDictGet,
+          globalDictGetOutOfBounds,
+          globalDictGetInterval,
+          globalDictPutInterval
         ]
   return ()
