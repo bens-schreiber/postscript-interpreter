@@ -27,22 +27,18 @@ globalDictMismatchedTypesReturnsError =
       Nothing -> assertFailure "Operator not found"
 
 {--#region Arithmetic--}
-globalDictAdd :: Test
-globalDictAdd =
+testPsAdd :: Test
+testPsAdd =
   TestCase $
-    case lookupDict "add" globalDictionary of
-      Just op -> assertEqual "add" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "add" expected (psAdd input)
   where
     input = [OperandInt 1, OperandInt 2]
     expected = Right [OperandInt 3]
 
-globalDictSub :: Test
-globalDictSub =
+testPsSub :: Test
+testPsSub =
   TestCase $
-    case lookupDict "sub" globalDictionary of
-      Just op -> assertEqual "sub" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "sub" expected (psSub input)
   where
     input = [OperandInt 1, OperandInt 2]
     expected = Right [OperandInt 1]
@@ -51,62 +47,50 @@ globalDictSub =
 
 {--#region Stack Manipulation--}
 
-globalDictExch :: Test
-globalDictExch =
+testPsExch :: Test
+testPsExch =
   TestCase $
-    case lookupDict "exch" globalDictionary of
-      Just op -> assertEqual "exch" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "exch" expected (psExch input)
   where
     input = [OperandInt 1, OperandInt 2]
     expected = Right [OperandInt 2, OperandInt 1]
 
-globalDictPop :: Test
-globalDictPop =
+testPsPop :: Test
+testPsPop =
   TestCase $
-    case lookupDict "pop" globalDictionary of
-      Just op -> assertEqual "pop" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "pop" expected (psPop input)
   where
     input = [OperandInt 1, OperandInt 2]
     expected = Right [OperandInt 2]
 
-globalDictCopy :: Test
-globalDictCopy =
+testPsCopy :: Test
+testPsCopy =
   TestCase $
-    case lookupDict "copy" globalDictionary of
-      Just op -> assertEqual "copy" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "copy" expected (psCopy input)
   where
     input = [OperandInt 2, OperandInt 2, OperandInt 1] -- Top of stack is first, copy first 2 elements => 2, 1 ; append to top of stack => 2, 1, 2, 1
     expected = Right [OperandInt 2, OperandInt 1, OperandInt 2, OperandInt 1]
 
-globalDictDup :: Test
-globalDictDup =
+testPsDup :: Test
+testPsDup =
   TestCase $
-    case lookupDict "dup" globalDictionary of
-      Just op -> assertEqual "dup" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "dup" expected (psDup input)
   where
     input = [OperandInt 1, OperandInt 2]
     expected = Right [OperandInt 1, OperandInt 1, OperandInt 2]
 
-globalDictClear :: Test
-globalDictClear =
+testPsClear :: Test
+testPsClear =
   TestCase $
-    case lookupDict "clear" globalDictionary of
-      Just op -> assertEqual "clear" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "clear" expected (psClear input)
   where
     input = [OperandInt 1, OperandInt 2]
     expected = Right []
 
-globalDictCount :: Test
-globalDictCount =
+testPsCount :: Test
+testPsCount =
   TestCase $
-    case lookupDict "count" globalDictionary of
-      Just op -> assertEqual "count" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "count" expected (psCount input)
   where
     input = [OperandInt 0, OperandInt 0]
     expected = Right [OperandInt 2, OperandInt 0, OperandInt 0]
@@ -115,57 +99,107 @@ globalDictCount =
 
 {--#region String Operations--}
 
-globalDictLength :: Test
-globalDictLength =
+testPsLength :: Test
+testPsLength =
   TestCase $
-    case lookupDict "length" globalDictionary of
-      Just op -> assertEqual "length" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "length" expected (psLength input)
   where
     input = [OperandString "hello"]
     expected = Right [OperandInt 5]
 
-globalDictGet :: Test
-globalDictGet =
+testPsGet :: Test
+testPsGet =
   TestCase $
-    case lookupDict "get" globalDictionary of
-      Just op -> assertEqual "get" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "get" expected (psGet input)
   where
     input = [OperandInt 0, OperandString "hello"]
     expected = Right [OperandInt 104]
 
-globalDictGetOutOfBounds :: Test
-globalDictGetOutOfBounds =
+testPsGetOutOfBounds :: Test
+testPsGetOutOfBounds =
   TestCase $
-    case lookupDict "get" globalDictionary of
-      Just op -> assertEqual "get" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "get" expected (psGet input)
   where
     input = [OperandInt 5, OperandString "hello"]
-    expected = Left $ TypeMismatchError "Index out of bounds"
+    expected = Left IndexOutOfBoundsError
 
-globalDictGetInterval :: Test
-globalDictGetInterval =
+testPsGetInterval :: Test
+testPsGetInterval =
   TestCase $
-    case lookupDict "getinterval" globalDictionary of
-      Just op -> assertEqual "getinterval" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "getinterval" expected (psGetInterval input)
   where
     input = [OperandInt 0, OperandInt 2, OperandString "hello"]
     expected = Right [OperandString "he"]
 
-globalDictPutInterval :: Test
-globalDictPutInterval =
+testPsPutInterval :: Test
+testPsPutInterval =
   TestCase $
-    case lookupDict "putinterval" globalDictionary of
-      Just op -> assertEqual "putinterval" expected (op input)
-      Nothing -> assertFailure "Operator not found"
+    assertEqual "putinterval" expected (psPutInterval input)
   where
     input = [OperandString "he", OperandInt 0, OperandString "xxllo"]
     expected = Right [OperandString "hello"]
 
 {--#endregion String Operations--}
+
+{--#region Boolean Operations--}
+
+testPsEq :: Test
+testPsEq =
+  TestCase $
+    assertEqual "eq" expected (psEq input)
+  where
+    input = [OperandInt 1, OperandInt 1]
+    expected = Right [OperandBool True]
+
+testPsNe :: Test
+testPsNe =
+  TestCase $
+    assertEqual "ne" expected (psNe input)
+  where
+    input = [OperandInt 1, OperandInt 1]
+    expected = Right [OperandBool False]
+
+testPsGt :: Test
+testPsGt =
+  TestCase $
+    assertEqual "gt" expected (psGt input)
+  where
+    input = [OperandInt 1, OperandInt 2]
+    expected = Right [OperandBool True]
+
+testPsLt :: Test
+testPsLt =
+  TestCase $
+    assertEqual "lt" expected (psLt input)
+  where
+    input = [OperandInt 1, OperandInt 2]
+    expected = Right [OperandBool False]
+
+testPsAnd :: Test
+testPsAnd =
+  TestCase $
+    assertEqual "and" expected (psAnd input)
+  where
+    input = [OperandBool True, OperandBool False]
+    expected = Right [OperandBool False]
+
+testPsOr :: Test
+testPsOr =
+  TestCase $
+    assertEqual "or" expected (psOr input)
+  where
+    input = [OperandBool True, OperandBool False]
+    expected = Right [OperandBool True]
+
+testPsNot :: Test
+testPsNot =
+  TestCase $
+    assertEqual "not" expected (psNot input)
+  where
+    input = [OperandBool True]
+    expected = Right [OperandBool False]
+
+{--#endregion Boolean Operations--}
 
 main :: IO ()
 main = do
@@ -176,18 +210,25 @@ main = do
           globalDictLookupSymbolReturnsNothing,
           globalDictEmptyOperandStackReturnsUnderflowError,
           globalDictMismatchedTypesReturnsError,
-          globalDictAdd,
-          globalDictSub,
-          globalDictExch,
-          globalDictPop,
-          globalDictCopy,
-          globalDictDup,
-          globalDictClear,
-          globalDictCount,
-          globalDictLength,
-          globalDictGet,
-          globalDictGetOutOfBounds,
-          globalDictGetInterval,
-          globalDictPutInterval
+          testPsAdd,
+          testPsSub,
+          testPsExch,
+          testPsPop,
+          testPsCopy,
+          testPsDup,
+          testPsClear,
+          testPsCount,
+          testPsLength,
+          testPsGet,
+          testPsGetOutOfBounds,
+          testPsGetInterval,
+          testPsPutInterval,
+          testPsEq,
+          testPsNe,
+          testPsGt,
+          testPsLt,
+          testPsAnd,
+          testPsOr,
+          testPsNot
         ]
   return ()
