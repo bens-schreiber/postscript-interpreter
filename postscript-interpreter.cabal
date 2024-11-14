@@ -24,6 +24,7 @@ source-repository head
 library
   exposed-modules:
       GlobalDict
+      Interpreter
   other-modules:
       Paths_postscript_interpreter
   autogen-modules:

@@ -1,6 +1,13 @@
 import Data.Maybe (isJust, isNothing)
 import GlobalDict
+import Integration
 import Test.HUnit
+  ( Test (TestCase, TestList),
+    assertBool,
+    assertEqual,
+    assertFailure,
+    runTestTT,
+  )
 
 globalDictLookupSymbolReturnsJust :: Test
 globalDictLookupSymbolReturnsJust =
@@ -319,4 +326,5 @@ main = do
           testEndDict,
           testDef
         ]
+  _ <- runIntegrationTests
   return ()
