@@ -24,6 +24,11 @@ true true and
 end
 /myvar (foobar) def
 myvar
+2 4 exch
+7 8 pop
+dup
+count
+3 copy
 
 
 
