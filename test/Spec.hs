@@ -16,32 +16,34 @@ globalDictEmptyOperandStackReturnsUnderflowError :: Test
 globalDictEmptyOperandStackReturnsUnderflowError =
   TestCase $
     case lookupDict "add" globalDictionary of
-      Just op -> assertEqual "add" (Left StackUnderflowError) (op [])
-      Nothing -> assertFailure "Operator not found"
+      Just op -> assertEqual "add" (Left StackUnderflowError) (op [] [])
+      _ -> assertFailure "Operator not found"
 
 globalDictMismatchedTypesReturnsError :: Test
 globalDictMismatchedTypesReturnsError =
   TestCase $
     case lookupDict "add" globalDictionary of
-      Just op -> assertEqual "add" (Left $ TypeMismatchError "Expected two integers, but got: OperandInt 1 and OperandBool True") (op [OperandInt 1, OperandBool True])
-      Nothing -> assertFailure "Operator not found"
+      Just op -> assertEqual "add" (Left TypeMismatchError) (op [] [OperandInt 1, OperandBool True])
+      _ -> assertFailure "Operator not found"
 
 {--#region Arithmetic--}
 testPsAdd :: Test
 testPsAdd =
   TestCase $
-    assertEqual "add" expected (psAdd input)
+    assertEqual "add" expected (psAdd ds os)
   where
-    input = [OperandInt 1, OperandInt 2]
-    expected = Right [OperandInt 3]
+    ds = []
+    os = [OperandInt 1, OperandInt 2]
+    expected = Right $ OpResult [] [OperandInt 3]
 
 testPsSub :: Test
 testPsSub =
   TestCase $
-    assertEqual "sub" expected (psSub input)
+    assertEqual "sub" expected (psSub ds os)
   where
-    input = [OperandInt 1, OperandInt 2]
-    expected = Right [OperandInt 1]
+    ds = []
+    os = [OperandInt 1, OperandInt 2]
+    expected = Right $ OpResult [] [OperandInt 1]
 
 {--#endregion Arithmetic--}
 
@@ -50,50 +52,56 @@ testPsSub =
 testPsExch :: Test
 testPsExch =
   TestCase $
-    assertEqual "exch" expected (psExch input)
+    assertEqual "exch" expected (psExch ds os)
   where
-    input = [OperandInt 1, OperandInt 2]
-    expected = Right [OperandInt 2, OperandInt 1]
+    ds = []
+    os = [OperandInt 1, OperandInt 2]
+    expected = Right $ OpResult [] [OperandInt 2, OperandInt 1]
 
 testPsPop :: Test
 testPsPop =
   TestCase $
-    assertEqual "pop" expected (psPop input)
+    assertEqual "pop" expected (psPop ds os)
   where
-    input = [OperandInt 1, OperandInt 2]
-    expected = Right [OperandInt 2]
+    ds = []
+    os = [OperandInt 1, OperandInt 2]
+    expected = Right $ OpResult [] [OperandInt 2]
 
 testPsCopy :: Test
 testPsCopy =
   TestCase $
-    assertEqual "copy" expected (psCopy input)
+    assertEqual "copy" expected (psCopy ds os)
   where
-    input = [OperandInt 2, OperandInt 2, OperandInt 1] -- Top of stack is first, copy first 2 elements => 2, 1 ; append to top of stack => 2, 1, 2, 1
-    expected = Right [OperandInt 2, OperandInt 1, OperandInt 2, OperandInt 1]
+    ds = []
+    os = [OperandInt 2, OperandInt 2, OperandInt 1] -- Top of stack is first, copy first 2 elements => 2, 1 ; append to top of stack => 2, 1, 2, 1
+    expected = Right $ OpResult [] [OperandInt 2, OperandInt 1, OperandInt 2, OperandInt 1]
 
 testPsDup :: Test
 testPsDup =
   TestCase $
-    assertEqual "dup" expected (psDup input)
+    assertEqual "dup" expected (psDup ds os)
   where
-    input = [OperandInt 1, OperandInt 2]
-    expected = Right [OperandInt 1, OperandInt 1, OperandInt 2]
+    ds = []
+    os = [OperandInt 1, OperandInt 2]
+    expected = Right $ OpResult [] [OperandInt 1, OperandInt 1, OperandInt 2]
 
 testPsClear :: Test
 testPsClear =
   TestCase $
-    assertEqual "clear" expected (psClear input)
+    assertEqual "clear" expected (psClear ds os)
   where
-    input = [OperandInt 1, OperandInt 2]
-    expected = Right []
+    ds = []
+    os = [OperandInt 1, OperandInt 2]
+    expected = Right $ OpResult [] []
 
 testPsCount :: Test
 testPsCount =
   TestCase $
-    assertEqual "count" expected (psCount input)
+    assertEqual "count" expected (psCount ds os)
   where
-    input = [OperandInt 0, OperandInt 0]
-    expected = Right [OperandInt 2, OperandInt 0, OperandInt 0]
+    ds = []
+    os = [OperandInt 0, OperandInt 0]
+    expected = Right $ OpResult [] [OperandInt 2, OperandInt 0, OperandInt 0]
 
 {--#endregion Stack Manipulation--}
 
@@ -102,42 +110,47 @@ testPsCount =
 testPsLength :: Test
 testPsLength =
   TestCase $
-    assertEqual "length" expected (psLength input)
+    assertEqual "length" expected (psLength ds os)
   where
-    input = [OperandString "hello"]
-    expected = Right [OperandInt 5]
+    ds = []
+    os = [OperandString "hello"]
+    expected = Right $ OpResult [] [OperandInt 5]
 
 testPsGet :: Test
 testPsGet =
   TestCase $
-    assertEqual "get" expected (psGet input)
+    assertEqual "get" expected (psGet ds os)
   where
-    input = [OperandInt 0, OperandString "hello"]
-    expected = Right [OperandInt 104]
+    ds = []
+    os = [OperandInt 0, OperandString "hello"]
+    expected = Right $ OpResult [] [OperandInt 104]
 
 testPsGetOutOfBounds :: Test
 testPsGetOutOfBounds =
   TestCase $
-    assertEqual "get" expected (psGet input)
+    assertEqual "get" expected (psGet ds os)
   where
-    input = [OperandInt 5, OperandString "hello"]
+    ds = []
+    os = [OperandInt 5, OperandString "hello"]
     expected = Left IndexOutOfBoundsError
 
 testPsGetInterval :: Test
 testPsGetInterval =
   TestCase $
-    assertEqual "getinterval" expected (psGetInterval input)
+    assertEqual "getinterval" expected (psGetInterval ds os)
   where
-    input = [OperandInt 0, OperandInt 2, OperandString "hello"]
-    expected = Right [OperandString "he"]
+    ds = []
+    os = [OperandInt 0, OperandInt 2, OperandString "hello"]
+    expected = Right $ OpResult [] [OperandString "he"]
 
 testPsPutInterval :: Test
 testPsPutInterval =
   TestCase $
-    assertEqual "putinterval" expected (psPutInterval input)
+    assertEqual "putinterval" expected (psPutInterval ds os)
   where
-    input = [OperandString "he", OperandInt 0, OperandString "xxllo"]
-    expected = Right [OperandString "hello"]
+    ds = []
+    os = [OperandString "he", OperandInt 0, OperandString "xxllo"]
+    expected = Right $ OpResult [] [OperandString "hello"]
 
 {--#endregion String Operations--}
 
@@ -146,60 +159,129 @@ testPsPutInterval =
 testPsEq :: Test
 testPsEq =
   TestCase $
-    assertEqual "eq" expected (psEq input)
+    assertEqual "eq" expected (psEq ds os)
   where
-    input = [OperandInt 1, OperandInt 1]
-    expected = Right [OperandBool True]
+    ds = []
+    os = [OperandInt 1, OperandInt 1]
+    expected = Right $ OpResult [] [OperandBool True]
 
 testPsNe :: Test
 testPsNe =
   TestCase $
-    assertEqual "ne" expected (psNe input)
+    assertEqual "ne" expected (psNe ds os)
   where
-    input = [OperandInt 1, OperandInt 1]
-    expected = Right [OperandBool False]
+    ds = []
+    os = [OperandInt 1, OperandInt 1]
+    expected = Right $ OpResult [] [OperandBool False]
 
 testPsGt :: Test
 testPsGt =
   TestCase $
-    assertEqual "gt" expected (psGt input)
+    assertEqual "gt" expected (psGt ds os)
   where
-    input = [OperandInt 1, OperandInt 2]
-    expected = Right [OperandBool True]
+    ds = []
+    os = [OperandInt 1, OperandInt 2]
+    expected = Right $ OpResult [] [OperandBool True]
 
 testPsLt :: Test
 testPsLt =
   TestCase $
-    assertEqual "lt" expected (psLt input)
+    assertEqual "lt" expected (psLt ds os)
   where
-    input = [OperandInt 1, OperandInt 2]
-    expected = Right [OperandBool False]
+    ds = []
+    os = [OperandInt 1, OperandInt 2]
+    expected = Right $ OpResult [] [OperandBool False]
 
 testPsAnd :: Test
 testPsAnd =
   TestCase $
-    assertEqual "and" expected (psAnd input)
+    assertEqual "and" expected (psAnd ds os)
   where
-    input = [OperandBool True, OperandBool False]
-    expected = Right [OperandBool False]
+    ds = []
+    os = [OperandBool True, OperandBool False]
+    expected = Right $ OpResult [] [OperandBool False]
 
 testPsOr :: Test
 testPsOr =
   TestCase $
-    assertEqual "or" expected (psOr input)
+    assertEqual "or" expected (psOr ds os)
   where
-    input = [OperandBool True, OperandBool False]
-    expected = Right [OperandBool True]
+    ds = []
+    os = [OperandBool True, OperandBool False]
+    expected = Right $ OpResult [] [OperandBool True]
 
 testPsNot :: Test
 testPsNot =
   TestCase $
-    assertEqual "not" expected (psNot input)
+    assertEqual "not" expected (psNot ds os)
   where
-    input = [OperandBool True]
-    expected = Right [OperandBool False]
+    ds = []
+    os = [OperandBool True]
+    expected = Right $ OpResult [] [OperandBool False]
 
 {--#endregion Boolean Operations--}
+
+{--#region Dictionary Operations--}
+
+testDict :: Test
+testDict =
+  TestCase $
+    assertEqual "dict" expected (psDict ds os)
+  where
+    ds = []
+    os = [OperandInt 5]
+    expected = Right $ OpResult [] [OperandDict $ makeDict 5]
+
+testLengthDict :: Test
+testLengthDict =
+  TestCase $
+    assertEqual "lengthdict" expected (psLengthDict ds os)
+  where
+    ds = []
+    os = [OperandDict $ makeDict 5]
+    expected = Right $ OpResult [] [OperandInt 0]
+
+testMaxLength :: Test
+testMaxLength =
+  TestCase $
+    assertEqual "maxlength" expected (psMaxlength ds os)
+  where
+    ds = []
+    os = [OperandDict $ makeDict 5]
+    expected = Right $ OpResult [] [OperandInt 5]
+
+testBeginDict :: Test
+testBeginDict =
+  TestCase $
+    assertEqual "begindict" expected (psBeginDict ds os)
+  where
+    ds = []
+    os = [OperandDict $ makeDict 5]
+    expected = Right $ OpResult [makeDict 5] []
+
+testEndDict :: Test
+testEndDict =
+  TestCase $
+    assertEqual "enddict" expected (psEndDict ds os)
+  where
+    ds = [makeDict 5]
+    os = []
+    expected = Right $ OpResult [] []
+
+testDef :: Test
+testDef =
+  TestCase $
+    case psDef ds os of
+      Right (OpResult ds' os') -> case lookupDict "foo" (head ds') of
+        Just op -> assertEqual "def" expected (op ds' os')
+        Nothing -> assertFailure "foo not found"
+      Left _ -> assertFailure "Error"
+  where
+    ds = [makeDict 5]
+    os = [OperandInt 1, OperandName "foo"]
+    expected = Right $ OpResult ds [OperandInt 1]
+
+{--#endregion Dictionary Operations--}
 
 main :: IO ()
 main = do
@@ -229,6 +311,12 @@ main = do
           testPsLt,
           testPsAnd,
           testPsOr,
-          testPsNot
+          testPsNot,
+          testDict,
+          testLengthDict,
+          testMaxLength,
+          testBeginDict,
+          testEndDict,
+          testDef
         ]
   return ()
