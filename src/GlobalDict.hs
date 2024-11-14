@@ -86,10 +86,10 @@ psDiv ds os = binaryIntOp div ds os
 {--#endregion Arithmetic Operations--}
 
 {--#region String Operations--}
-psLength :: Operator
-psLength ds (OperandString s : os) = Right $ OpResult ds (OperandInt (length s) : os)
-psLength _ (_ : _) = Left TypeMismatchError
-psLength _ [] = Left StackUnderflowError
+psStrLength :: Operator
+psStrLength ds (OperandString s : os) = Right $ OpResult ds (OperandInt (length s) : os)
+psStrLength _ (_ : _) = Left TypeMismatchError
+psStrLength _ [] = Left StackUnderflowError
 
 psGet :: Operator
 psGet ds (OperandInt n : OperandString s : os)
@@ -185,6 +185,12 @@ psDef _ _ = Left TypeMismatchError
 
 {--#endregion Dictionary Operations--}
 
+-- | Length can be applied to either a dictionary or a string
+psLength :: Operator
+psLength ds (OperandDict d : os) = psLengthDict ds (OperandDict d : os)
+psLength ds (OperandString s : os) = psStrLength ds (OperandString s : os)
+psLength _ _ = Left TypeMismatchError
+
 -- | Lookup a symbol in the dictionary
 lookupDict :: String -> Dictionary -> Maybe Operator
 lookupDict key (Dictionary _ d) = HashMap.lookup key d
@@ -192,10 +198,10 @@ lookupDict key (Dictionary _ d) = HashMap.lookup key d
 -- | Contains all PostScript operators
 globalDictionary :: Dictionary
 globalDictionary =
-  Dictionary 100 $ HashMap.fromList $ stackOps ++ arithmeticOps ++ stringOps ++ booleanOps ++ dictOps
+  Dictionary 100 $ HashMap.fromList $ stackOps ++ arithmeticOps ++ stringOps ++ booleanOps ++ dictOps ++ [("length", psLength)]
   where
     stackOps = [("exch", psExch), ("pop", psPop), ("copy", psCopy), ("dup", psDup), ("clear", psClear), ("count", psCount)]
     arithmeticOps = [("add", psAdd), ("sub", psSub), ("mul", psMul), ("div", psDiv), ("mod", psMod)]
-    stringOps = [("length", psLength), ("get", psGet), ("getinterval", psGetInterval), ("putinterval", psPutInterval)]
+    stringOps = [("get", psGet), ("getinterval", psGetInterval), ("putinterval", psPutInterval)]
     booleanOps = [("eq", psEq), ("ne", psNe), ("and", psAnd), ("or", psOr), ("not", psNot), ("gt", psGt), ("lt", psLt)]
-    dictOps = [("dict", psDict), ("lengthdict", psLengthDict), ("maxlength", psMaxlength), ("begin", psBeginDict), ("end", psEndDict), ("def", psDef)]
+    dictOps = [("dict", psDict), ("maxlength", psMaxlength), ("begin", psBeginDict), ("end", psEndDict), ("def", psDef)]
