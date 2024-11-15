@@ -23,7 +23,10 @@ source-repository head
 
 library
   exposed-modules:
+      Dictionary
       Interpreter
+      Operators
+      PostScript
   other-modules:
       Paths_postscript_interpreter
   autogen-modules:

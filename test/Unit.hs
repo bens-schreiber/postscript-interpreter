@@ -1,7 +1,9 @@
 module Unit (runUnitTests) where
 
 import Data.Maybe (isJust, isNothing)
-import Interpreter
+import Dictionary (InterpreterError (..), Operand (..), dict, dictLookup)
+import Operators
+import PostScript (globalDictionary)
 import Test.HUnit
   ( Test (TestCase, TestList),
     assertBool,
@@ -13,24 +15,24 @@ import Test.HUnit
 globalDictLookupSymbolReturnsJust :: Test
 globalDictLookupSymbolReturnsJust =
   TestCase $
-    assertBool "Operator not found" (isJust $ lookupDict "add" globalDictionary)
+    assertBool "Operator not found" (isJust $ dictLookup "add" globalDictionary)
 
 globalDictLookupSymbolReturnsNothing :: Test
 globalDictLookupSymbolReturnsNothing =
   TestCase $
-    assertBool "Operator found" (isNothing $ lookupDict "foo" globalDictionary)
+    assertBool "Operator found" (isNothing $ dictLookup "foo" globalDictionary)
 
 globalDictEmptyOperandStackReturnsUnderflowError :: Test
 globalDictEmptyOperandStackReturnsUnderflowError =
   TestCase $
-    case lookupDict "add" globalDictionary of
+    case dictLookup "add" globalDictionary of
       Just op -> assertEqual "add" (Left StackUnderflowError) (op [] [])
       _ -> assertFailure "Operator not found"
 
 globalDictMismatchedTypesReturnsError :: Test
 globalDictMismatchedTypesReturnsError =
   TestCase $
-    case lookupDict "add" globalDictionary of
+    case dictLookup "add" globalDictionary of
       Just op -> assertEqual "add" (Left TypeMismatchError) (op [] [OperandInt 1, OperandBool True])
       _ -> assertFailure "Operator not found"
 
@@ -238,7 +240,7 @@ testDict =
   where
     ds = []
     os = [OperandInt 5]
-    expected = Right ([], [OperandDict $ makeDict 5])
+    expected = Right ([], [OperandDict $ dict 5])
 
 testLengthDict :: Test
 testLengthDict =
@@ -246,7 +248,7 @@ testLengthDict =
     assertEqual "lengthdict" expected (psLengthDict ds os)
   where
     ds = []
-    os = [OperandDict $ makeDict 5]
+    os = [OperandDict $ dict 5]
     expected = Right ([], [OperandInt 0])
 
 testMaxLength :: Test
@@ -255,7 +257,7 @@ testMaxLength =
     assertEqual "maxlength" expected (psMaxlength ds os)
   where
     ds = []
-    os = [OperandDict $ makeDict 5]
+    os = [OperandDict $ dict 5]
     expected = Right ([], [OperandInt 5])
 
 testBeginDict :: Test
@@ -264,15 +266,15 @@ testBeginDict =
     assertEqual "begindict" expected (psBeginDict ds os)
   where
     ds = []
-    os = [OperandDict $ makeDict 5]
-    expected = Right ([makeDict 5], [])
+    os = [OperandDict $ dict 5]
+    expected = Right ([dict 5], [])
 
 testEndDict :: Test
 testEndDict =
   TestCase $
     assertEqual "enddict" expected (psEndDict ds os)
   where
-    ds = [makeDict 5]
+    ds = [dict 5]
     os = []
     expected = Right ([], [])
 
@@ -280,12 +282,12 @@ testDef :: Test
 testDef =
   TestCase $
     case psDef ds os of
-      Right (ds', os') -> case lookupDict "foo" (head ds') of
+      Right (ds', os') -> case dictLookup "foo" (head ds') of
         Just op -> assertEqual "def" expected (op ds' os')
         Nothing -> assertFailure "foo not found"
       Left _ -> assertFailure "Error"
   where
-    ds = [makeDict 5]
+    ds = [dict 5]
     os = [OperandInt 1, OperandName "foo"]
     expected = Right (ds, [OperandInt 1])
 

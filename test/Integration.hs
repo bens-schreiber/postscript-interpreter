@@ -1,12 +1,13 @@
 module Integration (runIntegrationTests) where
 
-import Interpreter
+import Dictionary (InterpreterError (..), Operand (..))
+import PostScript (interpPostScript)
 import Test.HUnit
 
 interpreterCanDoMultilineArithmetic :: Test
 interpreterCanDoMultilineArithmetic =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Right (_, os) -> assertEqual "arithmetic" expected os
       Left err -> assertFailure $ show err
   where
@@ -20,7 +21,7 @@ interpreterCanDoMultilineArithmetic =
 interpreterEntersProcedure :: Test
 interpreterEntersProcedure =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Right (_, os) -> assertEqual "procedure" expected os
       Left err -> assertFailure $ show err
   where
@@ -30,7 +31,7 @@ interpreterEntersProcedure =
 interpreterEntersNestedProcedure :: Test
 interpreterEntersNestedProcedure =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Right (_, os) -> assertEqual "nested procedure" expected os
       Left err -> assertFailure $ show err
   where
@@ -40,7 +41,7 @@ interpreterEntersNestedProcedure =
 interpreterIfElseProcedure :: Test
 interpreterIfElseProcedure =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Right (_, os) -> assertEqual "if else" expected os
       Left err -> assertFailure $ show err
   where
@@ -50,7 +51,7 @@ interpreterIfElseProcedure =
 interpreterForLoopProcedure :: Test
 interpreterForLoopProcedure =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Right (_, os) -> assertEqual "for loop" expected os
       Left err -> assertFailure $ show err
   where
@@ -60,7 +61,7 @@ interpreterForLoopProcedure =
 interpreterRepeatProcedure :: Test
 interpreterRepeatProcedure =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Right (_, os) -> assertEqual "repeat loop" expected os
       Left err -> assertFailure $ show err
   where
@@ -71,14 +72,14 @@ interpreterRepeatProcedure =
 interpreterDoesNothingOnEmptyInput :: Test
 interpreterDoesNothingOnEmptyInput =
   TestCase $
-    case interpretWithGlobalDict "" of
+    case interpPostScript "" of
       Right (_, os) -> assertEqual "empty input" [] os
       Left err -> assertFailure $ show err
 
 interpreterDiscardsEmptySpaces :: Test
 interpreterDiscardsEmptySpaces =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Right (_, os) -> assertEqual "empty spaces" expected os
       Left err -> assertFailure $ show err
   where
@@ -88,7 +89,7 @@ interpreterDiscardsEmptySpaces =
 interpreterHandlesNestedParentheses :: Test
 interpreterHandlesNestedParentheses =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Right (_, os) -> assertEqual "nested parentheses" expected os
       Left err -> assertFailure $ show err
   where
@@ -98,7 +99,7 @@ interpreterHandlesNestedParentheses =
 interpreterRaisesErrorOnUnknownSymbol :: Test
 interpreterRaisesErrorOnUnknownSymbol =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Left (SymbolNotFound "foo") -> return ()
       Right _ -> assertFailure "Expected SymbolNotFound error"
       Left err -> assertEqual "Error" expected err
@@ -109,7 +110,7 @@ interpreterRaisesErrorOnUnknownSymbol =
 interpreterRaisesErrorOnUnmatchedParentheses :: Test
 interpreterRaisesErrorOnUnmatchedParentheses =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Left StringNeverClosed -> return ()
       Right _ -> assertFailure "Expected StringNeverClosed error"
       Left err -> assertEqual "Error" expected err
@@ -120,7 +121,7 @@ interpreterRaisesErrorOnUnmatchedParentheses =
 interpreterRaisesErrorOnUnmatchedParentheses2 :: Test
 interpreterRaisesErrorOnUnmatchedParentheses2 =
   TestCase $
-    case interpretWithGlobalDict input of
+    case interpPostScript input of
       Left StringNeverOpened -> return ()
       Right _ -> assertFailure "Expected StringNeverOpened error"
       Left err -> assertEqual "Error" expected err
