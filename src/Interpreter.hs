@@ -5,9 +5,17 @@ import Data.Char (isDigit)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 
-data Operand = OperandInt Int | OperandBool Bool | OperandString String | OperandDict Dictionary | OperandName String | OperandProc String
+-- | Primitive value (operands) in PostScript
+data Operand
+  = OperandInt Int
+  | OperandBool Bool
+  | OperandString String
+  | OperandDict Dictionary
+  | OperandName String
+  | OperandProc String
   deriving (Show, Eq, Ord)
 
+-- | The result of an operation. Contains the new dictionary and operand stack.
 type OpResult = ([Dictionary], [Operand])
 
 data InterpreterError
@@ -24,10 +32,10 @@ data InterpreterError
   | QuitError
   deriving (Show, Eq)
 
--- | Some function that operates on both the operand os and the dictionary os, returning new stacks or an error
+-- | Some function that operates on both the operand stack and the dictionary stack
 type Operator = [Dictionary] -> [Operand] -> Either InterpreterError OpResult
 
--- | A dictionary mapping some symbol to an implementation or value
+-- | A table mapping some symbol to an operator function
 data Dictionary = Dictionary
   { capacity :: Int,
     hashmap :: HashMap String Operator
@@ -42,13 +50,15 @@ instance Show Dictionary where
 instance Ord Dictionary where
   compare (Dictionary cap1 _) (Dictionary cap2 _) = compare cap1 cap2
 
+-- | Create a dictionary with a given capacity
 makeDict :: Int -> Dictionary
 makeDict n = Dictionary n HashMap.empty
 
--- | Lookup a symbol in the dictionary
+-- | Lookup a symbol in a dictionary
 lookupDict :: String -> Dictionary -> Maybe Operator
 lookupDict key (Dictionary _ d) = HashMap.lookup key d
 
+-- | Lookup a symbol in a list of dictionaries. From the top of the stack to the bottom. First match wins.
 lookupDictStackSymbol :: String -> [Dictionary] -> Maybe Operator
 lookupDictStackSymbol _ [] = Nothing
 lookupDictStackSymbol key (d : ds) = case lookupDict key d of
@@ -56,20 +66,25 @@ lookupDictStackSymbol key (d : ds) = case lookupDict key d of
   Nothing -> lookupDictStackSymbol key ds
 
 {--#region Stack Manipulation--}
+
+-- | Exchange the top two elements of the operand stack
 psExch :: Operator
 psExch ds (x : y : os) = Right (ds, y : x : os)
 psExch _ _ = Left StackUnderflowError
 
+-- | Pop the top element of the operand stack
 psPop :: Operator
 psPop ds (_ : os) = Right (ds, os)
 psPop _ _ = Left StackUnderflowError
 
+-- | Copy the top n elements of the operand stack and append them to the top of the stack
 psCopy :: Operator
 psCopy ds (OperandInt n : os)
   | n <= length os = Right (ds, take n os ++ os)
   | otherwise = Left StackUnderflowError
 psCopy _ _ = Left StackUnderflowError
 
+-- | Duplicate the top element of the operand stack
 psDup :: Operator
 psDup ds (o : os) = Right (ds, o : o : os)
 psDup _ _ = Left StackUnderflowError
@@ -77,6 +92,7 @@ psDup _ _ = Left StackUnderflowError
 psClear :: Operator
 psClear ds _ = Right (ds, [])
 
+-- | Appends the number of elements on the operand stack to the operand stack
 psCount :: Operator
 psCount ds os = Right (ds, OperandInt (length os) : os)
 
@@ -101,12 +117,16 @@ psDiv ds os = binaryIntOp div ds os
 {--#endregion Arithmetic Operations--}
 
 {--#region String Operations--}
+
+-- | Gets the length of a PostScript string, excluding the outermost parentheses (e.g. "(hello)" => 5)
 pslen :: String -> Int
 pslen = subtract 2 . length
 
+-- | Wraps a string in parentheses
 wrapstr :: String -> String
 wrapstr s = "(" ++ s ++ ")"
 
+-- | Strips the outermost parentheses from a string (e.g. "(hello)" => "hello")
 stripstr :: String -> String
 stripstr = init . tail
 
@@ -115,6 +135,7 @@ psStrLength ds (OperandString s : os) = Right (ds, OperandInt (pslen s) : os)
 psStrLength _ (_ : _) = Left TypeMismatchError
 psStrLength _ [] = Left StackUnderflowError
 
+-- | Get the character at index n in a string (excluding the outermost parentheses)
 psGet :: Operator
 psGet ds (OperandInt n : OperandString s : os)
   | n >= 0 && n < pslen s = Right (ds, OperandInt (fromEnum (s !! (n + 1))) : os)
@@ -122,6 +143,7 @@ psGet ds (OperandInt n : OperandString s : os)
 psGet _ (_ : _ : _) = Left TypeMismatchError
 psGet _ _ = Left StackUnderflowError
 
+-- | Get a substring of length count starting at index n in a string (excluding the outermost parentheses)
 psGetInterval :: Operator
 psGetInterval ds (OperandInt n : OperandInt count : OperandString s : os)
   | n >= 0 && n + count <= pslen s = Right (ds, OperandString (wrapstr $ take count (drop (n + 1) s)) : os)
@@ -129,6 +151,7 @@ psGetInterval ds (OperandInt n : OperandInt count : OperandString s : os)
 psGetInterval _ (_ : _ : _ : _) = Left TypeMismatchError
 psGetInterval _ _ = Left StackUnderflowError
 
+-- | Replace a substring of length count starting at index n in a string with a replacement string (excluding the outermost parentheses)
 psPutInterval :: Operator
 psPutInterval ds (OperandString replacement : OperandInt si : OperandString s : os)
   | si >= 0 && si + pslen replacement <= pslen s = Right (ds, OperandString (wrapstr $ take si (stripstr s) ++ stripstr replacement ++ drop (si + pslen replacement) (stripstr s)) : os)
@@ -155,10 +178,12 @@ binaryBoolOp _ bitOp ds (OperandInt x : OperandInt y : os) = Right (ds, OperandI
 binaryBoolOp _ _ _ (_ : _ : _) = Left TypeMismatchError
 binaryBoolOp _ _ _ _ = Left StackUnderflowError
 
+-- | Boolean AND and OR operations. For integers, these are bitwise operations.
 psAnd, psOr :: Operator
 psAnd = binaryBoolOp (&&) (.&.)
 psOr = binaryBoolOp (||) (.|.)
 
+-- | Boolean NOT operation. For integers, this is a bitwise operation.
 psNot :: Operator
 psNot ds (OperandBool b : os) = Right (ds, OperandBool (not b) : os)
 psNot ds (OperandInt b : os) = Right (ds, OperandInt (complement b) : os)
@@ -176,30 +201,37 @@ psLt = comparisonOp (<)
 {--#endregion Boolean Operations--}
 
 {-- #region Dictionary Operations--}
+
+-- | Create a new dictionary with n capacity and push it onto the operand stack
 psDict :: Operator
 psDict ds (OperandInt n : os) = Right (ds, OperandDict (makeDict n) : os)
 psDict _ _ = Left TypeMismatchError
 
+-- | Appends the amount of key, value pairs in a dictionary to the operand stack
 psLengthDict :: Operator
 psLengthDict ds (OperandDict (Dictionary _ d) : os) = Right (ds, OperandInt (HashMap.size d) : os)
 psLengthDict _ _ = Left TypeMismatchError
 
+-- | Appends the maximum capacity of a dictionary to the operand stack
 psMaxlength :: Operator
 psMaxlength ds (OperandDict (Dictionary n _) : os) = Right (ds, OperandInt n : os)
 psMaxlength _ _ = Left TypeMismatchError
 
+-- | Pushes a new dictionary onto the dictionary stack
 psBeginDict :: Operator
 psBeginDict ds (OperandDict d : os) = Right (d : ds, os)
 psBeginDict _ _ = Left TypeMismatchError
 
+-- | Pops the top dictionary from the dictionary stack
 psEndDict :: Operator
 psEndDict (_ : ds) os = Right (ds, os)
 psEndDict _ _ = Left StackUnderflowError
 
--- | Creates an operator that pushes a value onto the operand stack
+-- | An operator that pushes a value onto the operand stack
 valueOperator :: Operand -> Operator
 valueOperator o ds os = Right (ds, o : os)
 
+-- | Define a key, value pair in a dictionary from an OperandName and some operand value
 psDef :: Operator
 psDef (Dictionary n d : ds) (value : OperandName key : os)
   | HashMap.size d < n = Right (Dictionary n (HashMap.insert key (valueOperator value) d) : ds, os)
@@ -209,14 +241,17 @@ psDef _ _ = Left TypeMismatchError
 {--#endregion Dictionary Operations--}
 
 {-- #region Procedure Operations--}
+
+-- | Strip the outermost curly braces from a procedure e.g "{ code }" => " code "
 stripProc :: String -> String
 stripProc = init . tail
 
--- | If the boolean is true, recursively interpret the procedure, otherwise return the current stacks
+-- | If the boolean is true, call the interpreter on the code block.
 psIf :: Operator
 psIf ds (OperandProc p : OperandBool b : os) = if b then interpret ds os (stripProc p) else Right (ds, os)
 psIf _ _ = Left TypeMismatchError
 
+-- | If the boolean is true, call the interpreter on the first code block, otherwise call it on the second.
 psIfElse :: Operator
 psIfElse ds (OperandProc p2 : OperandProc p1 : OperandBool b : os) =
   if b then interpret ds os (stripProc p1) else interpret ds os (stripProc p2)
@@ -233,6 +268,7 @@ psFor ds (OperandProc p : OperandInt end : OperandInt increment : OperandInt sta
           go (i + increment) ds'' os''
 psFor _ _ = Left TypeMismatchError
 
+-- | n { code } repeat
 psRepeat :: Operator
 psRepeat ds (OperandProc p : OperandInt n : os) = go n ds os
   where
@@ -243,17 +279,23 @@ psRepeat ds (OperandProc p : OperandInt n : os) = go n ds os
           go (i - 1) ds'' os''
 psRepeat _ _ = Left TypeMismatchError
 
+-- | Returns a QuitError stopping the interpreter
 psQuit :: Operator
 psQuit _ _ = Left QuitError
 
 {--#endregion Procedure Operations--}
 
+{--# region Array Operations --}
+
+-- | Append the length of a dictionary or string to the operand stack (arrays are not supported, so this is just a wrapper around psLengthDict and psStrLength)
 psLength :: Operator
 psLength ds (OperandDict d : os) = psLengthDict ds (OperandDict d : os)
 psLength ds (OperandString s : os) = psStrLength ds (OperandString s : os)
 psLength _ _ = Left TypeMismatchError
 
--- | Contains all PostScript operators
+{--# endregion Array Operations--}
+
+-- | Contains all default PostScript symbols and their corresponding operators
 globalDictionary :: Dictionary
 globalDictionary =
   Dictionary 100 $ HashMap.fromList $ stackOps ++ arithmeticOps ++ stringOps ++ booleanOps ++ dictOps ++ flowOps ++ [("length", psLength)]
@@ -282,6 +324,12 @@ globalDictionary =
 tokenize :: String -> Either InterpreterError [String]
 tokenize s = go s [] [] 0 0
   where
+    -- \| Parameters:
+    -- - current: the input string
+    -- - acc: token accumulator (accumulated value until whitespace or delimiter)
+    -- - tokens: stack of built tokens
+    -- - pDepth: parenthesis depth
+    -- - bDepth: bracket depth
     go :: String -> String -> [String] -> Int -> Int -> Either InterpreterError [String]
     go [] [] acc 0 0 = Right (reverse acc)
     go [] [] _ pDepth bDepth
@@ -317,10 +365,8 @@ tokenize s = go s [] [] 0 0
       | otherwise = go cs (current ++ [c]) acc pDepth bDepth
 
 -- | Given a global dictionary and code, interprets the code and returns stacks or an error.
--- Tokenize the code, then for each token:
--- - If the token is a number, push it to the operand stack.
--- - If the token is a string which starts with a ( and ends with a ), push it to the operand stack.
--- - If the token is a symbol, apply the symbol from the dictionary stack.
+-- Tokenize the code, then process each token.
+-- Returns an InterpreterError on failure.
 interpret :: [Dictionary] -> [Operand] -> String -> Either InterpreterError OpResult
 interpret ds os code = case tokenize code of
   Left err -> Left err
@@ -346,5 +392,6 @@ interpret ds os code = case tokenize code of
     isProc s = head s == '{' && last s == '}'
     isInt = all isDigit
 
+-- | An interpreter initialized with the global dictionary and an empty operand stack.
 interpretWithGlobalDict :: String -> Either InterpreterError OpResult
 interpretWithGlobalDict = interpret [globalDictionary] []
