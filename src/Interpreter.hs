@@ -27,12 +27,12 @@ data InterpreterError
 -- | Some function that operates on both the operand os and the dictionary os, returning new stacks or an error
 type Operator = [Dictionary] -> [Operand] -> Either InterpreterError OpResult
 
+-- | A dictionary mapping some symbol to an implementation or value
 data Dictionary = Dictionary
   { capacity :: Int,
     hashmap :: HashMap String Operator
   }
 
--- \| A dictionary mapping some symbol to an implementation or value
 instance Eq Dictionary where
   (Dictionary cap1 _) == (Dictionary cap2 _) = cap1 == cap2
 
@@ -176,7 +176,6 @@ psLt = comparisonOp (<)
 {--#endregion Boolean Operations--}
 
 {-- #region Dictionary Operations--}
-
 psDict :: Operator
 psDict ds (OperandInt n : os) = Right (ds, OperandDict (makeDict n) : os)
 psDict _ _ = Left TypeMismatchError
@@ -210,16 +209,14 @@ psDef _ _ = Left TypeMismatchError
 {--#endregion Dictionary Operations--}
 
 {-- #region Procedure Operations--}
-
--- | If the boolean is true, recursively interpret the procedure, otherwise return the current stacks
 stripProc :: String -> String
 stripProc = init . tail
 
+-- | If the boolean is true, recursively interpret the procedure, otherwise return the current stacks
 psIf :: Operator
 psIf ds (OperandProc p : OperandBool b : os) = if b then interpret ds os (stripProc p) else Right (ds, os)
 psIf _ _ = Left TypeMismatchError
 
--- | If the boolean is true, interpret the first procedure, otherwise interpret the second procedure
 psIfElse :: Operator
 psIfElse ds (OperandProc p2 : OperandProc p1 : OperandBool b : os) =
   if b then interpret ds os (stripProc p1) else interpret ds os (stripProc p2)
@@ -251,7 +248,6 @@ psQuit _ _ = Left QuitError
 
 {--#endregion Procedure Operations--}
 
--- | Length can be applied to either a dictionary or a string
 psLength :: Operator
 psLength ds (OperandDict d : os) = psLengthDict ds (OperandDict d : os)
 psLength ds (OperandString s : os) = psStrLength ds (OperandString s : os)
