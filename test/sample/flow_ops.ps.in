@@ -1,0 +1,14 @@
+{}
+true {
+    1 2 add
+} if
+true { (hello) } { (goodbye) } ifelse
+true {
+    true {
+        true {
+            true {
+                (potato)
+            } if
+        } if
+    } if
+} if

@@ -1,9 +1,7 @@
 module Unit (runUnitTests) where
 
 import Data.Maybe (isJust, isNothing)
-import Dictionary
 import Interpreter
-import Operators
 import Test.HUnit
   ( Test (TestCase, TestList),
     assertBool,

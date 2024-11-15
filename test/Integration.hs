@@ -1,6 +1,5 @@
 module Integration (runIntegrationTests) where
 
-import Dictionary
 import Interpreter
 import Test.HUnit
 
@@ -17,6 +16,56 @@ interpreterCanDoMultilineArithmetic =
       \3 3 sub\n\
       \mul"
     expected = [OperandInt 0]
+
+interpreterEntersProcedure :: Test
+interpreterEntersProcedure =
+  TestCase $
+    case interpretWithGlobalDict input of
+      Right (_, os) -> assertEqual "procedure" expected os
+      Left err -> assertFailure $ show err
+  where
+    input = "true { 1 2 add } if"
+    expected = [OperandInt 3]
+
+interpreterEntersNestedProcedure :: Test
+interpreterEntersNestedProcedure =
+  TestCase $
+    case interpretWithGlobalDict input of
+      Right (_, os) -> assertEqual "nested procedure" expected os
+      Left err -> assertFailure $ show err
+  where
+    input = "true { true { 1 2 add } if } if"
+    expected = [OperandInt 3]
+
+interpreterIfElseProcedure :: Test
+interpreterIfElseProcedure =
+  TestCase $
+    case interpretWithGlobalDict input of
+      Right (_, os) -> assertEqual "if else" expected os
+      Left err -> assertFailure $ show err
+  where
+    input = "false { 1 } { 2 } ifelse"
+    expected = [OperandInt 2]
+
+interpreterForLoopProcedure :: Test
+interpreterForLoopProcedure =
+  TestCase $
+    case interpretWithGlobalDict input of
+      Right (_, os) -> assertEqual "for loop" expected os
+      Left err -> assertFailure $ show err
+  where
+    input = "0 1 5 { 1 } for"
+    expected = [OperandInt 1, OperandInt 1, OperandInt 1, OperandInt 1, OperandInt 1, OperandInt 1]
+
+interpreterRepeatProcedure :: Test
+interpreterRepeatProcedure =
+  TestCase $
+    case interpretWithGlobalDict input of
+      Right (_, os) -> assertEqual "repeat loop" expected os
+      Left err -> assertFailure $ show err
+  where
+    input = "5 { 1 } repeat"
+    expected = [OperandInt 1, OperandInt 1, OperandInt 1, OperandInt 1, OperandInt 1]
 
 {--#region Error Handling--}
 interpreterDoesNothingOnEmptyInput :: Test
@@ -92,6 +141,11 @@ runIntegrationTests = do
           interpreterHandlesNestedParentheses,
           interpreterRaisesErrorOnUnknownSymbol,
           interpreterRaisesErrorOnUnmatchedParentheses,
-          interpreterRaisesErrorOnUnmatchedParentheses2
+          interpreterRaisesErrorOnUnmatchedParentheses2,
+          interpreterEntersProcedure,
+          interpreterEntersNestedProcedure,
+          interpreterForLoopProcedure,
+          interpreterRepeatProcedure,
+          interpreterIfElseProcedure
         ]
   return ()
