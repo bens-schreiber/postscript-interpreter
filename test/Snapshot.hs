@@ -1,7 +1,8 @@
 module Snapshot (runSnapshotTests) where
 
-import GlobalDict
+import Dictionary
 import Interpreter
+import Operators
 import Test.HUnit
 
 extractValue :: Operand -> String

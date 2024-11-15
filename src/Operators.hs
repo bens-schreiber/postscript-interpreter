@@ -1,39 +1,11 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
-module GlobalDict where
+module Operators where
 
-import Data.Bits
-import Data.HashMap.Strict (HashMap)
+import Data.Bits (Bits ((.&.), (.|.)), complement)
 import qualified Data.HashMap.Strict as HashMap
-
-data Operand = OperandInt Int | OperandBool Bool | OperandString String | OperandDict Dictionary | OperandName String | OperandProc String
-  deriving (Show, Eq, Ord)
-
-data OpError = TypeMismatchError | StackUnderflowError | DivisionByZeroError | IndexOutOfBoundsError | StackOverflowError
-  deriving (Show, Eq)
-
-type OpResult = ([Dictionary], [Operand])
-
--- | Some function that operates on both the operand os and the dictionary os, returning new stacks or an error
-type Operator = [Dictionary] -> [Operand] -> Either OpError OpResult
-
--- | A dictionary mapping some symbol to an implementation or value
-data Dictionary = Dictionary
-  { capacity :: Int,
-    hashmap :: HashMap String Operator
-  }
-
-instance Eq Dictionary where
-  (Dictionary cap1 _) == (Dictionary cap2 _) = cap1 == cap2
-
-instance Show Dictionary where
-  show (Dictionary _ _) = "--nostringval--"
-
-instance Ord Dictionary where
-  compare (Dictionary cap1 _) (Dictionary cap2 _) = compare cap1 cap2
-
-makeDict :: Int -> Dictionary
-makeDict n = Dictionary n HashMap.empty
+import Dictionary
+import Interpreter
 
 {--#region Stack Manipulation--}
 psExch :: Operator
@@ -189,23 +161,46 @@ psDef _ _ = Left TypeMismatchError
 
 {--#endregion Dictionary Operations--}
 
+-- {-- #region Procedure Operations--}
+-- -- These operators will call the interpreter recursively to interpret the procedure.
+-- -- Thus I am implementing them here to avoid circular dependencies.
+
+-- psIf :: Operator
+-- psIf ds (OperandBool b : OperandProc p : os) = if b then interpret ds os p else Right (ds, os)
+-- psIf _ _ = Left TypeMismatchError
+
+-- psIfElse :: Operator
+-- psIfElse ds (OperandBool b : OperandProc p1 : OperandProc p2 : os) = if b then interpret ds os p1 else interpret ds os p2
+-- psIfElse _ _ = Left TypeMismatchError
+
+-- psFor :: Operator
+-- psFor ds (OperandInt limit : OperandInt increment : OperandInt start : OperandProc p : os) = go start
+--   where
+--     go :: Int -> Either InterpreterError OpResult
+--     go i
+--       | i >= limit = Right (ds, os)
+--       | otherwise = case interpret ds (OperandInt i : os) p of
+--           Right (ds', os') -> go (i + increment)
+--           Left err -> Left err
+-- psFor _ _ = Left TypeMismatchError
+
+-- psRepeat :: Operator
+-- psRepeat ds (OperandInt limit : OperandProc p : os) = go limit
+--   where
+--     go :: Int -> Either InterpreterError OpResult
+--     go 0 = Right (ds, os)
+--     go n = case interpret ds os p of
+--       Right (ds', os') -> go (n - 1)
+--       Left err -> Left err
+-- psRepeat _ _ = Left TypeMismatchError
+
+-- psQuit :: Operator
+-- psQuit _ _ = Left QuitError
+
+-- {--#endregion Procedure Operations--}
+
 -- | Length can be applied to either a dictionary or a string
 psLength :: Operator
 psLength ds (OperandDict d : os) = psLengthDict ds (OperandDict d : os)
 psLength ds (OperandString s : os) = psStrLength ds (OperandString s : os)
 psLength _ _ = Left TypeMismatchError
-
--- | Lookup a symbol in the dictionary
-lookupDict :: String -> Dictionary -> Maybe Operator
-lookupDict key (Dictionary _ d) = HashMap.lookup key d
-
--- | Contains all PostScript operators
-globalDictionary :: Dictionary
-globalDictionary =
-  Dictionary 100 $ HashMap.fromList $ stackOps ++ arithmeticOps ++ stringOps ++ booleanOps ++ dictOps ++ [("length", psLength)]
-  where
-    stackOps = [("exch", psExch), ("pop", psPop), ("copy", psCopy), ("dup", psDup), ("clear", psClear), ("count", psCount)]
-    arithmeticOps = [("add", psAdd), ("sub", psSub), ("mul", psMul), ("div", psDiv), ("mod", psMod)]
-    stringOps = [("get", psGet), ("getinterval", psGetInterval), ("putinterval", psPutInterval)]
-    booleanOps = [("eq", psEq), ("ne", psNe), ("and", psAnd), ("or", psOr), ("not", psNot), ("gt", psGt), ("lt", psLt)]
-    dictOps = [("dict", psDict), ("maxlength", psMaxlength), ("begin", psBeginDict), ("end", psEndDict), ("def", psDef)]

@@ -23,8 +23,10 @@ source-repository head
 
 library
   exposed-modules:
-      GlobalDict
+      Dictionary
+      GlobalNames
       Interpreter
+      Operators
   other-modules:
       Paths_postscript_interpreter
   autogen-modules:

@@ -1,6 +1,6 @@
 module Integration (runIntegrationTests) where
 
-import GlobalDict
+import Dictionary
 import Interpreter
 import Test.HUnit
 

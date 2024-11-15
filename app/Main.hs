@@ -1,6 +1,5 @@
 module Main (main) where
 
-import GlobalDict
 import Interpreter
 
 main :: IO ()
