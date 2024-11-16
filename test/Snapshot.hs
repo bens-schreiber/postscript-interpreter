@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Snapshot (runSnapshotTests) where
 
 import Dictionary (Operand (..))
@@ -30,22 +32,22 @@ snapshotFlowOps = TestCase $ do
     Right (_, os) -> assertEqual "all flow operations" (lines out) (map extractValue os)
     Left err -> assertFailure $ show err
 
-snapshotDynamicScoping :: Test
-snapshotDynamicScoping = TestCase $ do
-  in' <- readFile "test/sample/scoping.ps.in"
-  out <- readFile "test/sample/scoping.dynamic.out"
+useStaticScoping :: Bool
+#ifdef USE_STATIC_SCOPING
+useStaticScoping = True
+#else
+useStaticScoping = False
+#endif
+
+snapshotScoping :: Test
+snapshotScoping = TestCase $ do
+  let inFile = "test/sample/scoping.ps.in"
+  let outFile = if useStaticScoping then "test/sample/scoping.static.out" else "test/sample/scoping.dynamic.out"
+  in' <- readFile inFile
+  out <- readFile outFile
 
   case interpPostScript in' of
-    Right (_, os) -> assertEqual "dynamic scoping" (lines out) (map extractValue os)
-    Left err -> assertFailure $ show err
-
-snapshotStaticScoping :: Test
-snapshotStaticScoping = TestCase $ do
-  in' <- readFile "test/sample/scoping.ps.in"
-  out <- readFile "test/sample/scoping.static.out"
-
-  case interpPostScript in' of
-    Right (_, os) -> assertEqual "static scoping" (lines out) (map extractValue os)
+    Right (_, os) -> assertEqual ("Scoping " ++ (if useStaticScoping then "static" else "dynamic")) (lines out) (map extractValue os)
     Left err -> assertFailure $ show err
 
 runSnapshotTests :: IO ()
@@ -55,7 +57,6 @@ runSnapshotTests = do
       TestList
         [ snapshotAllBasicOperators,
           snapshotFlowOps,
-          snapshotDynamicScoping
-          -- snapshotStaticScoping -- TODO
+          snapshotScoping
         ]
   return ()

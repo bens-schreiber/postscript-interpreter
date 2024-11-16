@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP #-}
+
 module Interpreter (interpret) where
 
 import Data.Char (isDigit)
-import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), dictStackLookup)
+import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), dictStackLookup, dict)
 
 -- | Tokenize a string by splitting on whitespace (space, newline, tab).
 --
@@ -60,6 +62,19 @@ tokenize s = go s [] [] 0 0
             else go cs [] (current : acc) pDepth bDepth
       | otherwise = go cs (current ++ [c]) acc pDepth bDepth
 
+stripProc :: String -> String
+stripProc = init . tail
+
+handleProc :: [Dictionary] -> [Operand] -> String -> Either InterpreterError OpResult
+#ifndef USE_STATIC_SCOPING
+handleProc ds os p  = interpret ds os (stripProc p) -- Dynamic scoping, pass the current dictionary stack
+#else
+-- Static scoping, pass a new dict stack, when interpret completes, pop the dict stack
+handleProc ds os p = case interpret ([dict 100] ++ ds) os (stripProc p) of
+  Right (_, os') -> Right (ds, os')
+  Left err -> Left err
+#endif
+
 -- | Given a global dictionary and code, interprets the code and returns stacks or an error.
 --
 -- Code is first tokenized. In this lexical analysis process, strings and procedures are identified and grouped.
@@ -86,18 +101,19 @@ interpret ds os code = case tokenize code of
       | isBool token = Right (ds', OperandBool (token == "true") : os')
       | isName token = Right (ds', OperandName (tail token) : os')
       | isProc token = Right (ds', OperandProc token : os')
-      | otherwise = case dictStackLookup token ds' of
-          Just op -> case op ds' os' of
-            Right (ds'', OperandProc p : os'') -> interpret ds'' os'' (stripProc p) -- Recursively call the interpreter on procedure lookup
-            Right (ds'', os'') -> Right (ds'', os'')
-            Left err -> Left err
-          Nothing -> Left (SymbolNotFound token)
+      | otherwise = findSymbol token ds' os'
+
+    findSymbol :: String -> [Dictionary] -> [Operand] -> Either InterpreterError OpResult
+    findSymbol token ds' os' = case dictStackLookup token ds' of
+      Just op -> case op ds' os' of
+        Right (ds'', OperandProc p : os'') -> handleProc ds'' os'' p
+        Right (ds'', os'') -> Right (ds'', os'')
+        Left err -> Left err
+      Nothing -> Left (SymbolNotFound token)
+
     isStr, isBool, isName, isProc :: String -> Bool
     isStr s = head s == '(' && last s == ')'
     isBool s = s == "true" || s == "false"
     isName s = head s == '/'
     isProc s = head s == '{' && last s == '}'
     isInt = all isDigit
-
-    stripProc :: String -> String
-    stripProc = init . tail
