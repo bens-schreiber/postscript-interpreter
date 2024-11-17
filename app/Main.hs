@@ -24,6 +24,8 @@ repl ds os code = do
         repl ds os (code ++ postScriptCode ++ "\n")
       ProcNeverClosed -> do
         repl ds os (code ++ postScriptCode ++ "\n")
+      QuitError -> do
+        return ()
       _ -> do
         putStrLn $ "Execution error: " ++ show err
         repl ds os ""
