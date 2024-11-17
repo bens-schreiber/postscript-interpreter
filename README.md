@@ -39,7 +39,13 @@ func
 outervar
 ```
 
-With dynamic scoping, the output will be `2 2`. With static scoping, the output will be `2 1`.
+### Dynamic Scoping Output
+<img width="502" alt="Screenshot 2024-11-16 at 6 56 01 PM" src="https://github.com/user-attachments/assets/2fbb369b-8dca-4fb8-ba37-3a227d2143c8">
+
+### Static Scoping Output
+<img width="502" alt="Screenshot 2024-11-16 at 6 57 50 PM" src="https://github.com/user-attachments/assets/8e44b66e-6450-466b-b3e5-79fae8aa22f0">
+
+
 
 ## Testing
 This project uses `hunit` for unit, integration and snapshot testing.
