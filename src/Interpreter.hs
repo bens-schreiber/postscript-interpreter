@@ -100,6 +100,7 @@ interpret ds os code = case tokenize code of
     processToken (Left err) _ = Left err
     processToken (Right (ds', os')) token
       | isInt token = Right (ds', OperandInt (read token) : os')
+      | isDouble token = Right (ds', OperandDouble (read token) : os')
       | isStr token = Right (ds', OperandString token : os')
       | isBool token = Right (ds', OperandBool (token == "true") : os')
       | isName token = Right (ds', OperandName (tail token) : os')
@@ -114,9 +115,14 @@ interpret ds os code = case tokenize code of
         Left err -> Left err
       Nothing -> Left (SymbolNotFound token)
 
-    isStr, isBool, isName, isProc :: String -> Bool
+    isStr, isBool, isName, isProc, isInt, isDouble :: String -> Bool
     isStr s = head s == '(' && last s == ')'
     isBool s = s == "true" || s == "false"
     isName s = head s == '/'
     isProc s = head s == '{' && last s == '}'
-    isInt = all isDigit
+    isInt s = case s of
+      ('-' : xs) -> all isDigit xs
+      _ -> all isDigit s
+    isDouble s = case reads s :: [(Double, String)] of
+      [(_, "")] -> True
+      _ -> False

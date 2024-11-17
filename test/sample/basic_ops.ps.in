@@ -3,6 +3,13 @@
 2 2 mul
 2 4 mod
 4 2 div
+2 4 idiv
+-1 abs
+1 neg
+1.9 ceiling
+-1.9 floor
+1.5 round
+4 sqrt
 (four) length
 (a) 0 get
 (abcd) 2 0 getinterval

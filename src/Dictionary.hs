@@ -20,6 +20,7 @@ import qualified Data.HashMap.Strict as HashMap
 -- | Primitive value (operands) in PostScript
 data Operand
   = OperandInt Int
+  | OperandDouble Double
   | OperandBool Bool
   | OperandString String
   | OperandDict Dictionary
@@ -29,9 +30,10 @@ data Operand
   deriving (Eq, Ord)
 
 instance Show Operand where
-  show (OperandString s) = s
   show (OperandInt i) = show i
+  show (OperandDouble f) = show f
   show (OperandBool b) = if b then "true" else "false"
+  show (OperandString s) = s
   show (OperandDict d) = show d
   show (OperandName n) = n
   show (OperandProc _) = "--nostringval--"
@@ -50,8 +52,8 @@ data InterpreterError
   | TypeMismatchError
   | StackUnderflowError
   | DivisionByZeroError
+  | SqrtNegativeError
   | IndexOutOfBoundsError
-  | StackOverflowError
   | QuitError
   deriving (Show, Eq)
 

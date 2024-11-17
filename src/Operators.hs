@@ -40,20 +40,64 @@ psCount ds os = Right (ds, OperandInt (length os) : os)
 {--#endregion Stack Manipulation--}
 
 {--#region Arithmetic Operations--}
+binaryNumOp :: (Double -> Double -> Double) -> Operator
+binaryNumOp op ds (OperandInt x : OperandInt y : os) = Right (ds, OperandInt (floor $ op (fromIntegral y) (fromIntegral x)) : os)
+binaryNumOp op ds (OperandDouble x : OperandDouble y : os) = Right (ds, OperandDouble (y `op` x) : os)
+binaryNumOp op ds (OperandInt x : OperandDouble y : os) = Right (ds, OperandDouble (y `op` fromIntegral x) : os)
+binaryNumOp op ds (OperandDouble x : OperandInt y : os) = Right (ds, OperandDouble (fromIntegral y `op` x) : os)
+binaryNumOp _ _ (_ : _ : _) = Left TypeMismatchError
+binaryNumOp _ _ _ = Left StackUnderflowError
+
 binaryIntOp :: (Int -> Int -> Int) -> Operator
 binaryIntOp op ds (OperandInt x : OperandInt y : os) = Right (ds, OperandInt (y `op` x) : os)
 binaryIntOp _ _ (_ : _ : _) = Left TypeMismatchError
 binaryIntOp _ _ _ = Left StackUnderflowError
 
-psAdd, psSub, psMul, psMod :: Operator
-psAdd = binaryIntOp (+)
-psSub = binaryIntOp (-)
-psMul = binaryIntOp (*)
+unaryNumOp :: (Double -> Double) -> Operator
+unaryNumOp op ds (OperandInt x : os) = Right (ds, OperandInt (floor $ op (fromIntegral x)) : os)
+unaryNumOp op ds (OperandDouble x : os) = Right (ds, OperandDouble (op x) : os)
+unaryNumOp _ _ (_ : _) = Left TypeMismatchError
+unaryNumOp _ _ _ = Left StackUnderflowError
+
+unaryIntOp :: (Double -> Int) -> Operator
+unaryIntOp op ds (OperandInt x : os) = Right (ds, OperandInt (op (fromIntegral x)) : os)
+unaryIntOp op ds (OperandDouble x : os) = Right (ds, OperandInt (op x) : os)
+unaryIntOp _ _ (_ : _) = Left TypeMismatchError
+unaryIntOp _ _ _ = Left StackUnderflowError
+
+psAdd, psSub, psMul :: Operator
+psAdd = binaryNumOp (+)
+psSub = binaryNumOp (-)
+psMul = binaryNumOp (*)
+
+psAbs, psRound, psCeil, psFloor, psNeg :: Operator
+psAbs = unaryNumOp abs
+psRound = unaryIntOp round
+psCeil = unaryIntOp ceiling
+psFloor = unaryIntOp floor
+psNeg = unaryNumOp negate
+
+psMod :: Operator
 psMod = binaryIntOp mod
+
+psIDiv :: Operator
+psIDiv _ (OperandInt 0 : _) = Left DivisionByZeroError
+psIDiv ds os = binaryIntOp div ds os
 
 psDiv :: Operator
 psDiv _ (OperandInt 0 : _) = Left DivisionByZeroError
-psDiv ds os = binaryIntOp div ds os
+psDiv ds (OperandInt x : OperandInt y : os) = binaryNumOp (/) ds (OperandDouble (fromIntegral x) : OperandDouble (fromIntegral y) : os) -- stupid
+psDiv ds os = binaryNumOp (/) ds os
+
+psSqrt :: Operator
+psSqrt ds (OperandInt x : os)
+  | x >= 0 = Right (ds, OperandDouble (sqrt $ fromIntegral x) : os)
+  | otherwise = Left SqrtNegativeError
+psSqrt ds (OperandDouble x : os)
+  | x >= 0 = Right (ds, OperandDouble (sqrt x) : os)
+  | otherwise = Left SqrtNegativeError
+psSqrt _ (_ : _) = Left TypeMismatchError
+psSqrt _ _ = Left StackUnderflowError
 
 {--#endregion Arithmetic Operations--}
 
@@ -175,10 +219,11 @@ valueOperator :: Operand -> Operator
 valueOperator o ds os = Right (ds, o : os)
 
 -- | Define a key, value pair in a dictionary from an OperandName and some operand value
+-- On overflow, just change the dictionary to be larger. I don't know why PostScript does this, it must be some old limitation.
 psDef :: Operator
 psDef (Dictionary n d : ds) (value : OperandName key : os)
   | tableSize d < n = Right (Dictionary n (tableInsert key (valueOperator value) d) : ds, os)
-  | otherwise = Left StackOverflowError
+  | otherwise = Right (Dictionary (n + 1) (tableInsert key (valueOperator value) d) : ds, os)
 psDef _ _ = Left TypeMismatchError
 
 {--#endregion Dictionary Operations--}
