@@ -1,9 +1,10 @@
 {-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Interpreter (interpret) where
 
 import Data.Char (isDigit)
-import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), dictStackLookup, closureFromDs)
+import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), closureFromDs, dictStackLookup)
 
 -- | Tokenize a string by splitting on whitespace (space, newline, tab).
 --
@@ -31,7 +32,6 @@ tokenize input = go input "" [] 0 0
       | pDepth > 0 = Left StringNeverClosed
       | bDepth > 0 = Left ProcNeverClosed
     go [] _ _ _ _ = Left StringNeverClosed -- Defensive catch-all
-
     go (c : cs) current acc pDepth bDepth = case c of
       '(' | bDepth == 0 -> handleOpenParen cs current acc pDepth bDepth
       ')' | bDepth == 0 -> handleCloseParen cs current acc pDepth bDepth
@@ -63,7 +63,6 @@ tokenize input = go input "" [] 0 0
       | otherwise = go cs "" (current : acc) pDepth bDepth
 
     isWhitespace c = c `elem` [' ', '\n', '\t']
-
 
 stripProc :: String -> String
 stripProc = init . tail
