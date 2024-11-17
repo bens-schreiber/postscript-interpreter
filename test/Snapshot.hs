@@ -2,17 +2,8 @@
 
 module Snapshot (runSnapshotTests) where
 
-import Dictionary (Operand (..))
 import PostScript (interpPostScript)
 import Test.HUnit
-
-extractValue :: Operand -> String
-extractValue (OperandString s) = s
-extractValue (OperandInt i) = show i
-extractValue (OperandBool b) = if b then "true" else "false"
-extractValue (OperandDict d) = show d
-extractValue (OperandName n) = n
-extractValue (OperandProc _) = "--nostringval--"
 
 snapshotAllBasicOperators :: Test
 snapshotAllBasicOperators = TestCase $ do
@@ -20,7 +11,7 @@ snapshotAllBasicOperators = TestCase $ do
   out <- readFile "test/sample/basic_ops.out"
 
   case interpPostScript in' of
-    Right (_, os) -> assertEqual "all basic operations" (lines out) (map extractValue os)
+    Right (_, os) -> assertEqual "all basic operations" (lines out) (map show os)
     Left err -> assertFailure $ show err
 
 snapshotFlowOps :: Test
@@ -29,7 +20,7 @@ snapshotFlowOps = TestCase $ do
   out <- readFile "test/sample/flow_ops.out"
 
   case interpPostScript in' of
-    Right (_, os) -> assertEqual "all flow operations" (lines out) (map extractValue os)
+    Right (_, os) -> assertEqual "all flow operations" (lines out) (map show os)
     Left err -> assertFailure $ show err
 
 useStaticScoping :: Bool
@@ -47,7 +38,7 @@ snapshotScoping = TestCase $ do
   out <- readFile outFile
 
   case interpPostScript in' of
-    Right (_, os) -> assertEqual ("Scoping " ++ (if useStaticScoping then "static" else "dynamic")) (lines out) (map extractValue os)
+    Right (_, os) -> assertEqual ("Scoping " ++ (if useStaticScoping then "static" else "dynamic")) (lines out) (map show os)
     Left err -> assertFailure $ show err
 
 runSnapshotTests :: IO ()

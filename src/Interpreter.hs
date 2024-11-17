@@ -3,7 +3,7 @@
 module Interpreter (interpret) where
 
 import Data.Char (isDigit)
-import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), dictStackLookup, dict)
+import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), dictStackLookup, closureFromDs)
 
 -- | Tokenize a string by splitting on whitespace (space, newline, tab).
 --
@@ -20,57 +20,61 @@ import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..
 -- So, you can do "nested" strings, but parentheses must be balanced.
 -- Further, brackets can be placed inside of parentheses ignoring balance. (e.g. "({})" => ["({})"])
 tokenize :: String -> Either InterpreterError [String]
-tokenize s = go s [] [] 0 0
+tokenize input = go input "" [] 0 0
   where
-    -- \| Parameters:
-    -- - current: the input string
-    -- - acc: token accumulator (accumulated value until whitespace or delimiter)
-    -- - tokens: stack of built tokens
-    -- - pDepth: parenthesis depth
-    -- - bDepth: bracket depth
+    -- Recursive function
     go :: String -> String -> [String] -> Int -> Int -> Either InterpreterError [String]
-    go [] [] acc 0 0 = Right (reverse acc)
-    go [] [] _ pDepth bDepth
+    go [] current acc 0 0
+      | null current = Right (reverse acc)
+      | otherwise = Right (reverse (current : acc))
+    go [] _ _ pDepth bDepth
       | pDepth > 0 = Left StringNeverClosed
       | bDepth > 0 = Left ProcNeverClosed
-    go [] current acc 0 0 = Right (reverse (current : acc))
-    go [] _ _ _ _ = Left StringNeverClosed
-    go (c : cs) current acc pDepth bDepth
-      | c == '(' && bDepth == 0 && pDepth == 0 = go cs "(" acc 1 bDepth
-      | c == '(' && bDepth == 0 = go cs (current ++ "(") acc (pDepth + 1) bDepth
-      | c == ')' && bDepth == 0 =
-          if pDepth == 0
-            then Left StringNeverOpened
-            else
-              let newPDepth = pDepth - 1
-               in if newPDepth == 0
-                    then go cs [] ((current ++ ")") : acc) 0 bDepth
-                    else go cs (current ++ ")") acc newPDepth bDepth
-      | c == '{' && pDepth == 0 && bDepth == 0 = go cs "{" acc pDepth 1
-      | c == '{' && pDepth == 0 = go cs (current ++ "{") acc pDepth (bDepth + 1)
-      | c == '}' && pDepth == 0 =
-          if bDepth == 0
-            then Left ProcNeverOpened
-            else
-              let newBDepth = bDepth - 1
-               in if newBDepth == 0
-                    then go cs [] ((current ++ "}") : acc) pDepth 0
-                    else go cs (current ++ "}") acc pDepth newBDepth
-      | c `elem` [' ', '\n', '\t'] && pDepth == 0 && bDepth == 0 =
-          if null current
-            then go cs [] acc pDepth bDepth
-            else go cs [] (current : acc) pDepth bDepth
-      | otherwise = go cs (current ++ [c]) acc pDepth bDepth
+    go [] _ _ _ _ = Left StringNeverClosed -- Defensive catch-all
+
+    go (c : cs) current acc pDepth bDepth = case c of
+      '(' | bDepth == 0 -> handleOpenParen cs current acc pDepth bDepth
+      ')' | bDepth == 0 -> handleCloseParen cs current acc pDepth bDepth
+      '{' | pDepth == 0 -> handleOpenBracket cs current acc pDepth bDepth
+      '}' | pDepth == 0 -> handleCloseBracket cs current acc pDepth bDepth
+      _ | isWhitespace c && pDepth == 0 && bDepth == 0 -> handleWhitespace cs current acc pDepth bDepth
+      _ -> go cs (current ++ [c]) acc pDepth bDepth
+
+    handleOpenParen cs current acc pDepth bDepth
+      | null current && pDepth == 0 = go cs "(" acc (pDepth + 1) bDepth
+      | otherwise = go cs (current ++ "(") acc (pDepth + 1) bDepth
+
+    handleCloseParen cs current acc pDepth bDepth
+      | pDepth == 0 = Left StringNeverOpened
+      | pDepth == 1 = go cs [] ((current ++ ")") : acc) 0 bDepth
+      | otherwise = go cs (current ++ ")") acc (pDepth - 1) bDepth
+
+    handleOpenBracket cs current acc pDepth bDepth
+      | null current && bDepth == 0 = go cs "{" acc pDepth (bDepth + 1)
+      | otherwise = go cs (current ++ "{") acc pDepth (bDepth + 1)
+
+    handleCloseBracket cs current acc pDepth bDepth
+      | bDepth == 0 = Left ProcNeverOpened
+      | bDepth == 1 = go cs [] ((current ++ "}") : acc) pDepth 0
+      | otherwise = go cs (current ++ "}") acc pDepth (bDepth - 1)
+
+    handleWhitespace cs current acc pDepth bDepth
+      | null current = go cs "" acc pDepth bDepth
+      | otherwise = go cs "" (current : acc) pDepth bDepth
+
+    isWhitespace c = c `elem` [' ', '\n', '\t']
+
 
 stripProc :: String -> String
 stripProc = init . tail
 
 handleProc :: [Dictionary] -> [Operand] -> String -> Either InterpreterError OpResult
 #ifndef USE_STATIC_SCOPING
-handleProc ds os p  = interpret ds os (stripProc p) -- Dynamic scoping, pass the current dictionary stack
+-- Dynamic scoping, pass the dictionary stack
+handleProc ds os p  = interpret ds os (stripProc p)
 #else
--- Static scoping, pass a new dict stack, when interpret completes, pop the dict stack
-handleProc ds os p = case interpret ([dict 100] ++ ds) os (stripProc p) of
+-- Static scoping, pass a closure of the current dictionary stack, then return the unchanged dictionary stack
+handleProc ds os p = case interpret ([closureFromDs ds]) os (stripProc p) of
   Right (_, os') -> Right (ds, os')
   Left err -> Left err
 #endif

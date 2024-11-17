@@ -10,6 +10,7 @@ module Dictionary
     dictFromList,
     tableSize,
     tableInsert,
+    closureFromDs,
   )
 where
 
@@ -24,7 +25,17 @@ data Operand
   | OperandDict Dictionary
   | OperandName String
   | OperandProc String
-  deriving (Show, Eq, Ord)
+  | OperandOut String
+  deriving (Eq, Ord)
+
+instance Show Operand where
+  show (OperandString s) = s
+  show (OperandInt i) = show i
+  show (OperandBool b) = if b then "true" else "false"
+  show (OperandDict d) = show d
+  show (OperandName n) = n
+  show (OperandProc _) = "--nostringval--"
+  show (OperandOut s) = s
 
 -- | The result of an operation. Contains the new dictionary and operand stack.
 type OpResult = ([Dictionary], [Operand])
@@ -35,6 +46,7 @@ data InterpreterError
   | StringNeverOpened
   | ProcNeverClosed
   | ProcNeverOpened
+  | GlobalDictionaryPopError
   | TypeMismatchError
   | StackUnderflowError
   | DivisionByZeroError
@@ -85,3 +97,9 @@ dictStackLookup _ [] = Nothing
 dictStackLookup key (d : ds) = case dictLookup key d of
   Just op -> Just op
   Nothing -> dictStackLookup key ds
+
+closureFromDs :: [Dictionary] -> Dictionary
+closureFromDs = foldl combine (dict 0)
+  where
+    combine :: Dictionary -> Dictionary -> Dictionary
+    combine (Dictionary c1 d1) (Dictionary c2 d2) = Dictionary (c1 + c2) (HashMap.union d1 d2)

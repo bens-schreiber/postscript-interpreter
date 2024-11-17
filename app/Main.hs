@@ -1,10 +1,32 @@
 module Main (main) where
 
-import PostScript (interpPostScript)
+import Control.Monad
+import Dictionary (Dictionary (..), InterpreterError (..), Operand (..))
+import Interpreter (interpret)
+import PostScript (globalDictionary)
+import System.IO
+
+-- | Enter a read-eval-print loop for PostScript code.
+repl :: [Dictionary] -> [Operand] -> String -> IO ()
+repl ds os code = do
+  when (null code) $ do
+    putStr "ps> "
+    hFlush stdout
+
+  postScriptCode <- getLine
+  case interpret ds os (code ++ postScriptCode) of
+    Right (ds', OperandOut o : os'') -> do
+      putStrLn o
+      repl ds' os'' ""
+    Right (ds', os') -> repl ds' os' ""
+    Left err -> case err of
+      StringNeverClosed -> do
+        repl ds os (code ++ postScriptCode ++ "\n")
+      ProcNeverClosed -> do
+        repl ds os (code ++ postScriptCode ++ "\n")
+      _ -> do
+        putStrLn $ "Execution error: " ++ show err
+        repl ds os ""
 
 main :: IO ()
-main = do
-  let postScriptCode = "/outervar 1 def\n\n/func {\n    /outervar 2 def\n    outervar\n} def\n\nfunc\noutervar\n"
-  case interpPostScript postScriptCode of
-    Right (_, os) -> print os
-    Left err -> print err
+main = repl [globalDictionary] [] ""

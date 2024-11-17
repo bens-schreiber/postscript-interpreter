@@ -274,9 +274,9 @@ testEndDict =
   TestCase $
     assertEqual "enddict" expected (psEndDict ds os)
   where
-    ds = [dict 5]
+    ds = [dict 5, dict 3]
     os = []
-    expected = Right ([], [])
+    expected = Right ([dict 3], [])
 
 testDef :: Test
 testDef =

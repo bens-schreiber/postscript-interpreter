@@ -165,7 +165,9 @@ psBeginDict _ _ = Left TypeMismatchError
 
 -- | Pops the top dictionary from the dictionary stack
 psEndDict :: Operator
-psEndDict (_ : ds) os = Right (ds, os)
+psEndDict (_ : ds) os = case ds of
+  [] -> Left GlobalDictionaryPopError
+  _ -> Right (ds, os)
 psEndDict _ _ = Left StackUnderflowError
 
 -- | An operator that pushes a value onto the operand stack
@@ -221,6 +223,17 @@ psRepeat ds (OperandProc p : OperandInt n : os) = go n ds os
 psRepeat _ _ = Left TypeMismatchError
 
 {--#endregion Flow Control Operators--}
+
+{--#region Print Operators--}
+
+psOut :: Operator
+psOut ds (o : os) = Right (ds, OperandOut (show o) : os)
+psOut _ _ = Left StackUnderflowError
+
+psOutStack :: Operator
+psOutStack ds os = Right (ds, OperandOut (show os) : os)
+
+{--#endregion Print Operators--}
 
 -- | Replaces the stack with a QuitError
 psQuit :: Operator
