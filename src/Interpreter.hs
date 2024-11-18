@@ -3,6 +3,7 @@
 
 module Interpreter (interpret) where
 
+import Control.Monad (foldM)
 import Data.Char (isDigit)
 import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), closureFromDs, dictStackLookup)
 
@@ -94,11 +95,10 @@ handleProc ds os p = case interpret ([closureFromDs ds]) os (stripProc p) of
 interpret :: [Dictionary] -> [Operand] -> String -> Either InterpreterError OpResult
 interpret ds os code = case tokenize code of
   Left err -> Left err
-  Right tokens -> foldl processToken (Right (ds, os)) tokens
+  Right tokens -> foldM processToken (ds, os) tokens
   where
-    processToken :: Either InterpreterError OpResult -> String -> Either InterpreterError OpResult
-    processToken (Left err) _ = Left err
-    processToken (Right (ds', os')) token
+    processToken :: OpResult -> String -> Either InterpreterError OpResult
+    processToken (ds', os') token
       | isInt token = Right (ds', OperandInt (read token) : os')
       | isDouble token = Right (ds', OperandDouble (read token) : os')
       | isStr token = Right (ds', OperandString token : os')
