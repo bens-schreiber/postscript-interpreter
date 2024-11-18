@@ -19,16 +19,11 @@ repl ds os code = do
       putStrLn o
       repl ds' os'' ""
     Right (ds', os') -> repl ds' os' ""
-    Left err -> case err of
-      StringNeverClosed -> do
-        repl ds os (code ++ postScriptCode ++ "\n")
-      ProcNeverClosed -> do
-        repl ds os (code ++ postScriptCode ++ "\n")
-      QuitError -> do
-        return ()
-      _ -> do
-        putStrLn $ "Execution error: " ++ show err
-        repl ds os ""
+    Left err
+      | err == StringNeverClosed || err == ProcNeverClosed -> repl ds os (code ++ postScriptCode ++ "\n")
+      | otherwise -> do
+          putStrLn $ "Error: " ++ show err
+          repl ds os ""
 
 main :: IO ()
 main = repl [globalDictionary] [] ""
