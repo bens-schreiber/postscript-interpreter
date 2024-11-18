@@ -1,5 +1,7 @@
 # postscript-interpreter
 A interpreter for the Adobe PostScript language written in Haskell.
+
+### Run
 `stack run` to run a PostScript REPL.
 `stack test` to run the unit tests, integration tests, and snapshot tests.
 

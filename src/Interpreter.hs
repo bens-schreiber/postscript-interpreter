@@ -74,9 +74,9 @@ handleProc :: [Dictionary] -> [Operand] -> String -> Either InterpreterError OpR
 handleProc ds os p  = interpret ds os (stripProc p)
 #else
 -- Static scoping, pass a closure of the current dictionary stack, then return the unchanged dictionary stack
-handleProc ds os p = case interpret ([closureFromDs ds]) os (stripProc p) of
-  Right (_, os') -> Right (ds, os')
-  Left err -> Left err
+handleProc ds os p = do
+  (_, os') <- interpret [closureFromDs ds] os (stripProc p)
+  return (ds, os')
 #endif
 
 -- | Given a global dictionary and code, interprets the code and returns stacks or an error.
@@ -93,9 +93,9 @@ handleProc ds os p = case interpret ([closureFromDs ds]) os (stripProc p) of
 --
 -- Returns an InterpreterError on failure.
 interpret :: [Dictionary] -> [Operand] -> String -> Either InterpreterError OpResult
-interpret ds os code = case tokenize code of
-  Left err -> Left err
-  Right tokens -> foldM processToken (ds, os) tokens
+interpret ds os code = do
+  tokens <- tokenize code
+  foldM processToken (ds, os) tokens
   where
     processToken :: OpResult -> String -> Either InterpreterError OpResult
     processToken (ds', os') token

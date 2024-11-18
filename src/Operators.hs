@@ -209,9 +209,9 @@ psBeginDict _ _ = Left TypeMismatchError
 
 -- | Pops the top dictionary from the dictionary stack
 psEndDict :: Operator
-psEndDict (_ : ds) os = case ds of
-  [] -> Left GlobalDictionaryPopError
-  _ -> Right (ds, os)
+psEndDict (_ : ds) os
+  | null ds = Left GlobalDictionaryPopError
+  | otherwise = Right (ds, os)
 psEndDict _ _ = Left StackUnderflowError
 
 -- | An operator that pushes a value onto the operand stack
