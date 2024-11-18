@@ -21,6 +21,7 @@ repl ds os code = do
     Right (ds', os') -> repl ds' os' ""
     Left err
       | err == StringNeverClosed || err == ProcNeverClosed -> repl ds os (code ++ postScriptCode ++ "\n")
+      | err == QuitError -> return ()
       | otherwise -> do
           putStrLn $ "Error: " ++ show err
           repl ds os ""

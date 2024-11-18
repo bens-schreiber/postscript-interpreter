@@ -23,7 +23,7 @@ psCopy :: Operator
 psCopy ds (OperandInt n : os)
   | n <= length os = Right (ds, take n os ++ os)
   | otherwise = Left StackUnderflowError
-psCopy _ _ = Left StackUnderflowError
+psCopy _ _ = Left TypeMismatchError
 
 -- | Duplicate the top element of the operand stack
 psDup :: Operator

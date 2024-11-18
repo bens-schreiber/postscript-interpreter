@@ -100,8 +100,8 @@ interpret ds os code = do
     processToken :: OpResult -> String -> Either InterpreterError OpResult
     processToken (ds', os') token
       | isInt token = Right (ds', OperandInt (read token) : os')
-      | isDouble token = Right (ds', OperandDouble (read token) : os')
       | isStr token = Right (ds', OperandString token : os')
+      | isDouble token = Right (ds', OperandDouble (read token) : os')
       | isBool token = Right (ds', OperandBool (token == "true") : os')
       | isName token = Right (ds', OperandName (tail token) : os')
       | isProc token = Right (ds', OperandProc token : os')
