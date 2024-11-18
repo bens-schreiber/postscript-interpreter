@@ -37,22 +37,40 @@ globalDictMismatchedTypesReturnsError =
       _ -> assertFailure "Operator not found"
 
 {--#region Arithmetic--}
-testPsAdd :: Test
-testPsAdd =
+testArithmeticIntIntYieldsInt :: Test
+testArithmeticIntIntYieldsInt =
   TestCase $
-    assertEqual "add" expected (psAdd ds os)
+    assertEqual "add(int, int) => int" expected (psAdd ds os)
   where
     ds = []
     os = [OperandInt 1, OperandInt 2]
     expected = Right ([], [OperandInt 3])
 
-testPsSub :: Test
-testPsSub =
+testArithmeticDoubleIntYieldsDouble :: Test
+testArithmeticDoubleIntYieldsDouble =
   TestCase $
-    assertEqual "sub" expected (psSub ds os)
+    assertEqual "add(double, int) => double" expected (psAdd ds os)
   where
     ds = []
-    os = [OperandInt 1, OperandInt 2]
+    os = [OperandDouble 1.0, OperandInt 2]
+    expected = Right ([], [OperandDouble 3.0])
+
+testArithmeticIntDoubleYieldsDouble :: Test
+testArithmeticIntDoubleYieldsDouble =
+  TestCase $
+    assertEqual "add(int, double) => double" expected (psAdd ds os)
+  where
+    ds = []
+    os = [OperandInt 1, OperandDouble 2.0]
+    expected = Right ([], [OperandDouble 3.0])
+
+testArithmeticOrderOps :: Test
+testArithmeticOrderOps =
+  TestCase $
+    assertEqual "sub(x,y) => x - y" expected (psSub ds os)
+  where
+    ds = []
+    os = [OperandInt 1, OperandInt 2] -- 2 - 1
     expected = Right ([], [OperandInt 1])
 
 {--#endregion Arithmetic--}
@@ -302,8 +320,10 @@ runUnitTests = do
           globalDictLookupSymbolReturnsNothing,
           globalDictEmptyOperandStackReturnsUnderflowError,
           globalDictMismatchedTypesReturnsError,
-          testPsAdd,
-          testPsSub,
+          testArithmeticIntIntYieldsInt,
+          testArithmeticDoubleIntYieldsDouble,
+          testArithmeticIntDoubleYieldsDouble,
+          testArithmeticOrderOps,
           testPsExch,
           testPsPop,
           testPsCopy,
