@@ -27,7 +27,7 @@ Note that semantic analysis takes place before syntax analysis because of the st
 ## Dynamic vs Static Scoping
 This interpreter has the ability to switch between dynamic and static scoping. Do this by passing the compiler flag USE_STATIC_SCOPING in `stack.yaml`. Dynamic scoping is enabled by default as it is the default in PostScript.
 
-The static scoping implementation stays true to PostScripts stack based nature. Every new scope (some procedure `{...}`) will trigger a new dictionary to be created by merging all the dictionaries in the stack (a closure). Then, any modifications done to this dictionary will not be reflected in the parent scope, giving us static scoping.
+The static scoping implementation stays true to PostScripts stack based nature. Every new scope (some procedure `{...}`) will pass the current dictionary. Then, any modifications done to this dictionary will not be reflected in the parent scope, giving us static scoping.
 
 See `test/sample/scoping.ps.in`:
 ```postscript

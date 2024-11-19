@@ -5,7 +5,7 @@ module Interpreter (interpret) where
 
 import Control.Monad (foldM)
 import Data.Char (isDigit)
-import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), closureFromDs, dictStackLookup)
+import Dictionary (Dictionary (..), InterpreterError (..), OpResult, Operand (..), dictStackLookup)
 
 -- | Tokenize a string by splitting on whitespace (space, newline, tab).
 --
@@ -73,9 +73,9 @@ handleProc :: [Dictionary] -> [Operand] -> String -> Either InterpreterError OpR
 -- Dynamic scoping, pass the dictionary stack
 handleProc ds os p  = interpret ds os (stripProc p)
 #else
--- Static scoping, pass a closure of the current dictionary stack, then return the unchanged dictionary stack
+-- Static scoping, return the unchanged dictionary stack
 handleProc ds os p = do
-  (_, os') <- interpret [closureFromDs ds] os (stripProc p)
+  (_, os') <- interpret ds os (stripProc p)
   return (ds, os')
 #endif
 

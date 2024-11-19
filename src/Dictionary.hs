@@ -9,8 +9,7 @@ module Dictionary
     dictStackLookup,
     dictFromList,
     tableSize,
-    tableInsert,
-    closureFromDs,
+    tableInsert
   )
 where
 
@@ -99,9 +98,3 @@ dictStackLookup _ [] = Nothing
 dictStackLookup key (d : ds) = case dictLookup key d of
   Just op -> Just op
   Nothing -> dictStackLookup key ds
-
-closureFromDs :: [Dictionary] -> Dictionary
-closureFromDs = foldl combine (dict 0)
-  where
-    combine :: Dictionary -> Dictionary -> Dictionary
-    combine (Dictionary c1 d1) (Dictionary c2 d2) = Dictionary (c1 + c2) (HashMap.union d1 d2)
