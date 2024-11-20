@@ -2,7 +2,10 @@
 A interpreter for the Adobe PostScript language written in Haskell.
 
 ### Run
-`stack run` to run a PostScript REPL.
+You need to have `haskell stack` installed: https://docs.haskellstack.org/en/stable/
+
+Then, simply:
+`stack run` to enter a PostScript REPL.
 `stack test` to run the unit tests, integration tests, and snapshot tests.
 
 ## Features
